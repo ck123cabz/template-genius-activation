@@ -500,6 +500,35 @@ export const clientService = {
     }
   },
 
+  async getByToken(token: string): Promise<Client | null> {
+    if (!token || !token.match(/^G\d{4}$/)) {
+      return null;
+    }
+
+    if (!useSupabase) {
+      // Simulate async operation
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return mockClients.find((client) => client.token === token) || null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("token", token)
+        .single();
+
+      if (error) {
+        // Fallback to mock data if Supabase fails
+        return mockClients.find((client) => client.token === token) || null;
+      }
+      return data;
+    } catch (error) {
+      console.warn("Supabase getByToken query failed, using mock data:", error);
+      return mockClients.find((client) => client.token === token) || null;
+    }
+  },
+
   async create(
     client: Omit<Client, "id" | "created_at" | "activated_at">,
   ): Promise<Client> {
