@@ -61,7 +61,13 @@ for (let storyNumber = 1; storyNumber <= executionPlan.storyCount; storyNumber++
     prompt: generateQAPrompt(devResult.implementation, smResult.story)
   });
   
-  // STEP 3D: Extract Learnings for Next Story
+  // STEP 3D: Save Complete Story File
+  await saveCompleteStoryFile(epic, storyNumber, {
+    smResult, devResult, qaResult, previousStoryLearnings
+  });
+  console.log(`📁 Saved: docs/stories/story-epic-${epic.number}-${storyNumber}.md`);
+  
+  // STEP 3E: Extract Learnings for Next Story
   previousStoryLearnings = await extractLearningsFromStory(
     devResult, qaResult, storyNumber
   );

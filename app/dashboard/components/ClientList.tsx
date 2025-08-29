@@ -340,6 +340,14 @@ export default function ClientList({ initialClients }: ClientListProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
+                      window.open(`/dashboard/client/${client.id}/journey/activation`, "_blank")
+                    }
+                  >
+                    <Route className="w-4 h-4 mr-2" />
+                    Edit Journey
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
                       handleStatusUpdate(
                         client.id,
                         client.status === "activated" ? "pending" : "activated",

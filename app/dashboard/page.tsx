@@ -40,6 +40,7 @@ import {
   Trash2,
   MoveUp,
   MoveDown,
+  Route,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -1009,6 +1010,14 @@ export default function DashboardPage() {
                                 >
                                   <Copy className="w-4 h-4 mr-2" />
                                   Copy Activation Link
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    window.open(`/dashboard/client/${client.id}/journey/activation`, "_blank")
+                                  }
+                                >
+                                  <Route className="w-4 h-4 mr-2" />
+                                  Edit Journey
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem

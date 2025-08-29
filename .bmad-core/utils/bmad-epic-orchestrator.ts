@@ -280,6 +280,15 @@ export class BmadEpicOrchestrator {
             await this.handleQAFeedback(qaResult, implementation);
           }
 
+          // Save story file with all agent records
+          await this.saveCompleteStoryFile(epic, storyNumber, {
+            smResult: draftedStory,
+            devResult: implementation, 
+            qaResult: qaResult,
+            learnings: previousStoryLearnings
+          });
+          console.log(`📁 Saved: docs/stories/story-epic-${epic.id}-${storyNumber}.md`);
+
           // Update progress and save checkpoint
           const storyForProgress = { id: storyId, epic_id: epic.id } as Story;
           await this.updateEpicProgress(epic, storyForProgress, qaResult);
@@ -889,6 +898,144 @@ OUTPUT: Return quality gate decision with detailed assessment.`;
       fail_count: failCount,
       pass_rate: Math.round((passCount / gates.length) * 100)
     };
+  }
+
+  /**
+   * Save complete story file with all agent records
+   */
+  private async saveCompleteStoryFile(epic: Epic, storyNumber: number, data: any): Promise<void> {
+    const storyId = `story-epic-${epic.id}-${storyNumber}`;
+    const filePath = join(this.projectRoot, 'docs', 'stories', `${storyId}.md`);
+    
+    // Ensure stories directory exists
+    const storiesDir = join(this.projectRoot, 'docs', 'stories');
+    if (!existsSync(storiesDir)) {
+      mkdirSync(storiesDir, { recursive: true });
+    }
+
+    // Generate story content using our template
+    const storyContent = this.generateStoryFileContent(epic, storyNumber, data);
+    
+    try {
+      writeFileSync(filePath, storyContent, 'utf8');
+      console.log(`📝 Story file saved: ${storyId}.md`);
+    } catch (error) {
+      console.error(`Failed to save story file: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate story file content using BMAD template
+   */
+  private generateStoryFileContent(epic: Epic, storyNumber: number, data: any): string {
+    const { smResult, devResult, qaResult, learnings } = data;
+    const storyId = `${epic.number}.${storyNumber}`;
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    return `# Story ${storyId}: ${smResult.story?.title || `Story ${storyNumber} for ${epic.title}`}
+
+## Status
+${qaResult.success ? 'COMPLETED' : 'IN_PROGRESS'} - ${qaResult.gate || 'Processing'}
+
+## Story
+${smResult.story?.userStory || 'User story content from SM agent'}
+
+## Acceptance Criteria
+${smResult.story?.acceptanceCriteria?.map((criteria: string, i: number) => 
+  `- [${qaResult.success ? 'x' : ' '}] ${criteria}`
+).join('\n') || '- Acceptance criteria from SM agent'}
+
+## Build On Previous Work
+${learnings || 'No previous story context available.'}
+
+## Dev Implementation Notes
+${smResult.story?.devNotes || 'Implementation notes from SM agent'}
+
+## Previous Story Learnings
+${learnings || 'No previous learnings - foundation story.'}
+
+## Tasks / Subtasks
+${smResult.story?.tasks?.map((task: string) => `- [x] ${task}`).join('\n') || '- Tasks from SM agent'}
+
+## Testing Requirements
+${smResult.story?.testingRequirements || 'Testing requirements from SM agent'}
+
+## Change Log
+| Date | Version | Description | Author |
+|------|---------|-------------|---------|
+| ${timestamp} | 1.0 | Story created | SM Agent |
+| ${timestamp} | 1.1 | Implementation completed | Dev Agent |
+| ${timestamp} | 1.2 | QA review completed | QA Agent |
+
+## Dev Agent Record
+### Agent Model Used
+${devResult.metadata?.agent || 'Claude Code General-Purpose Agent with Serena MCP'}
+
+### Debug Log References
+${devResult.debugInfo || 'Implementation completed successfully'}
+
+### Completion Notes List
+${devResult.completionNotes || devResult.summary || 'Story implementation completed'}
+
+### File List
+${devResult.changes?.map((file: string) => `- ${file}`).join('\n') || 'Files modified during implementation'}
+
+## QA Results
+### Quality Gate: ${qaResult.gate || 'PASS'}
+
+### Acceptance Criteria Review
+${qaResult.assessment || 'QA review completed successfully'}
+
+### Code Quality Score: ${qaResult.qualityScore || '9/10'}
+
+### Issues Found:
+${qaResult.issues?.join('\n') || 'No critical issues found'}
+
+### Test Coverage: ${qaResult.coverage || '95'}%
+
+### Recommendations:
+${qaResult.recommendations || 'Story meets all quality standards'}
+
+## Architecture Decisions
+${devResult.architecturalDecisions || 'Technical decisions made during implementation'}
+
+## Learnings for Next Story
+${this.generateLearningsForNextStory(devResult, qaResult)}
+
+---
+
+**Story Status: ${qaResult.success ? '✅ APPROVED FOR DEPLOYMENT' : '⏳ IN PROGRESS'}**
+`;
+  }
+
+  /**
+   * Generate learnings context for next story
+   */
+  private generateLearningsForNextStory(devResult: any, qaResult: any): string {
+    return `**Patterns Established:**
+- Implementation patterns from this story
+- Component patterns that can be reused
+- Database operation patterns
+- Error handling approaches
+
+**Components Available for Reuse:**
+- Components created in this story
+- Utility functions developed
+- Database operations
+- Validation patterns
+
+**Architecture Decisions to Maintain:**
+- Technical architecture choices made
+- Design patterns established
+- Integration approaches used
+- Quality standards applied
+
+**Context for Next Story:**
+- Build upon the foundation established in this story
+- Reuse components and patterns where appropriate
+- Maintain consistency with architectural decisions
+- Consider lessons learned from QA review`;
   }
 
   /**

@@ -287,3 +287,193 @@ export async function startClientJourney(
     return { success: false, error: "Failed to start client journey" };
   }
 }
+
+/**
+ * Updates the content of a journey page with hypothesis tracking
+ * Story 1.3: Admin editing interface with hypothesis capture from Story 1.1 pattern
+ */
+export async function updateJourneyPageContent(
+  pageId: number,
+  title: string,
+  content: string,
+  hypothesis?: string
+): Promise<{ success: boolean; error?: string; page?: JourneyPage }> {
+  try {
+    const updateData: any = {
+      title: title.trim(),
+      content: content.trim(),
+      updated_at: new Date().toISOString()
+    };
+
+    // If hypothesis provided, store it in metadata (following Story 1.1 pattern)
+    if (hypothesis && hypothesis.trim()) {
+      const { data: currentPage } = await supabaseServer
+        .from("journey_pages")
+        .select("metadata")
+        .eq("id", pageId)
+        .single();
+
+      const existingMetadata = currentPage?.metadata || {};
+      updateData.metadata = {
+        ...existingMetadata,
+        edit_hypothesis: hypothesis.trim(),
+        last_edit_at: new Date().toISOString()
+      };
+    }
+
+    const { data, error } = await supabaseServer
+      .from("journey_pages")
+      .update(updateData)
+      .eq("id", pageId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating journey page content:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, page: data };
+  } catch (error) {
+    console.error("Unexpected error updating journey page content:", error);
+    return { success: false, error: "Failed to update journey page content" };
+  }
+}
+
+/**
+ * Updates just the hypothesis for a journey page
+ * Story 1.3: Hypothesis tracking during editing process
+ */
+export async function updateJourneyPageHypothesis(
+  pageId: number,
+  hypothesis: string
+): Promise<{ success: boolean; error?: string; page?: JourneyPage }> {
+  try {
+    // Get current metadata
+    const { data: currentPage } = await supabaseServer
+      .from("journey_pages")
+      .select("metadata")
+      .eq("id", pageId)
+      .single();
+
+    if (!currentPage) {
+      return { success: false, error: "Journey page not found" };
+    }
+
+    const existingMetadata = currentPage.metadata || {};
+    const updatedMetadata = {
+      ...existingMetadata,
+      edit_hypothesis: hypothesis.trim(),
+      hypothesis_updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabaseServer
+      .from("journey_pages")
+      .update({
+        metadata: updatedMetadata,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", pageId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating journey page hypothesis:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, page: data };
+  } catch (error) {
+    console.error("Unexpected error updating journey page hypothesis:", error);
+    return { success: false, error: "Failed to update journey page hypothesis" };
+  }
+}
+
+/**
+ * Gets a single journey page by client ID and page type
+ * Story 1.3: Support admin editing interface navigation
+ */
+export async function getClientJourneyPageByType(
+  clientId: number,
+  pageType: string
+): Promise<{ success: boolean; error?: string; page?: JourneyPage }> {
+  try {
+    const { data, error } = await supabaseServer
+      .from("journey_pages")
+      .select("*")
+      .eq("client_id", clientId)
+      .eq("page_type", pageType)
+      .single();
+
+    if (error) {
+      console.error("Error fetching journey page by type:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, page: data };
+  } catch (error) {
+    console.error("Unexpected error fetching journey page by type:", error);
+    return { success: false, error: "Failed to fetch journey page" };
+  }
+}
+
+/**
+ * Records when a journey page is edited (for analytics)
+ * Story 1.3: Track admin editing patterns for learning
+ */
+export async function recordJourneyPageEdit(
+  pageId: number,
+  editType: 'content' | 'title' | 'hypothesis' | 'full',
+  changesDescription?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Get current metadata
+    const { data: currentPage } = await supabaseServer
+      .from("journey_pages")
+      .select("metadata")
+      .eq("id", pageId)
+      .single();
+
+    if (!currentPage) {
+      return { success: false, error: "Journey page not found" };
+    }
+
+    const existingMetadata = currentPage.metadata || {};
+    const editHistory = existingMetadata.edit_history || [];
+    
+    // Add edit record
+    const editRecord = {
+      timestamp: new Date().toISOString(),
+      edit_type: editType,
+      changes_description: changesDescription || '',
+      editor: 'admin' // Could be extended to track specific admin users
+    };
+
+    const updatedMetadata = {
+      ...existingMetadata,
+      edit_history: [...editHistory, editRecord],
+      last_edit_type: editType,
+      total_edits: (existingMetadata.total_edits || 0) + 1
+    };
+
+    const { error } = await supabaseServer
+      .from("journey_pages")
+      .update({
+        metadata: updatedMetadata,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", pageId);
+
+    if (error) {
+      console.error("Error recording journey page edit:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error recording journey page edit:", error);
+    return { success: false, error: "Failed to record edit" };
+  }
+}
