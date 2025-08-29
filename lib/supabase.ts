@@ -8,6 +8,8 @@ export interface Client {
   email: string;
   position: string;
   salary: string;
+  hypothesis: string;
+  token: string;
   status: "pending" | "activated";
   created_at: string;
   activated_at: string | null;
@@ -101,12 +103,14 @@ const mockClients: Client[] = [
     email: "john@techcorp.com",
     position: "Senior Software Engineer",
     salary: "$120,000 - $150,000",
+    hypothesis: "John's current role lacks growth opportunities and he values work-life balance and remote flexibility. Our premium placement service should emphasize career advancement and flexible work arrangements to drive conversion.",
+    token: "G1001",
     status: "pending",
     created_at: "2024-01-15T00:00:00Z",
     activated_at: null,
     logo: "/techcorp-logo.png",
   },
-];
+];;
 
 const mockContent = {
   id: 1,

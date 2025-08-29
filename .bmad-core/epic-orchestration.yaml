@@ -1,0 +1,136 @@
+# BMAD Epic Orchestration Configuration
+# This file controls how Serena orchestrates BMAD development cycles
+
+orchestration:
+  # Execution Strategy
+  execution_mode: sequential  # or 'parallel' for independent stories
+  
+  # Sub-agent Configuration
+  subagents:
+    sm:
+      timeout: 300000  # 5 minutes per story draft
+      retries: 2
+      validation: story-draft-checklist
+      auto_approve: false  # Require explicit approval before dev
+      iterative_mode: true  # Create one story at a time, building on previous
+      learning_extraction: true  # Extract patterns from previous stories
+    
+    dev:
+      timeout: 600000  # 10 minutes per implementation
+      use_serena_capabilities: true
+      auto_testing: true
+      commit_strategy: per_story  # or 'per_epic'
+      validation_commands:
+        - "npm run lint"
+        - "npm run typecheck"
+        - "npm test"
+    
+    qa:
+      timeout: 300000
+      strict_mode: true  # Fail on any concerns
+      nfr_assessment: auto  # Automatic for high-risk stories
+      gate_levels:
+        - PASS
+        - CONCERNS
+        - FAIL
+        - WAIVED
+  
+  # Quality Gates
+  quality:
+    minimum_gate: PASS  # or 'CONCERNS' to allow minor issues
+    require_tests: true
+    coverage_threshold: 80
+    auto_fix_concerns: true  # Attempt to fix QA concerns automatically
+    max_retry_attempts: 2
+  
+  # Git Integration
+  git:
+    auto_branch: true  # Create feature/epic-{n} branches
+    branch_naming: "feature/epic-{epic_number}-{epic_slug}"
+    auto_commit: true
+    commit_style: conventional  # With BMAD story references
+    commit_template: "feat(epic-{epic}): {story_title} [BMAD-{story_id}]"
+    auto_pr: true      # Create PR when epic completes
+    pr_template: |
+      ## Epic {epic_number}: {epic_title}
+      
+      ### Stories Completed
+      {story_list}
+      
+      ### Test Coverage
+      {coverage_report}
+      
+      ### Quality Gates
+      {quality_summary}
+      
+      🤖 Automated by Serena BMAD Orchestrator
+  
+  # Human Intervention Points
+  human_approval:
+    pre_epic: true     # Confirm before starting epic
+    per_story: false   # Auto-proceed between stories
+    on_failure: true   # Require human intervention on failures
+    post_epic: true    # Final approval before merge
+    approval_timeout: 1800000  # 30 minutes timeout for approvals
+  
+  # Serena Integration
+  serena:
+    use_memory_system: true
+    use_playwright: true
+    parallel_file_edits: true
+    symbol_navigation: true
+    auto_learn: true  # Learn from each execution
+    memory_updates:
+      - execution_patterns
+      - common_issues
+      - optimization_opportunities
+      - reusable_components
+      - story_learnings  # Capture learnings between stories
+
+  # Iterative Learning Configuration
+  iterative_learning:
+    enabled: true
+    extract_sections:
+      - "Dev Agent Record"
+      - "QA Agent Record" 
+      - "Architecture Decisions"
+      - "Implementation Notes"
+    learning_context_length: 2000  # Max chars to pass to next story
+    pattern_recognition: true  # Identify reusable patterns
+    component_tracking: true   # Track component creation/reuse
+  
+  # Error Handling
+  error_handling:
+    story_failure:
+      strategy: retry_with_context  # or 'escalate', 'skip', 'abort'
+      max_retries: 2
+      preserve_partial: true
+    
+    implementation_failure:
+      strategy: rollback_and_retry
+      preserve_debug_info: true
+    
+    qa_failure:
+      strategy: auto_fix_then_escalate
+      fix_attempts: 1
+    
+    epic_failure:
+      strategy: save_checkpoint
+      allow_resume: true
+  
+  # Monitoring & Logging
+  monitoring:
+    log_level: info  # debug, info, warn, error
+    progress_updates: true
+    time_tracking: true
+    performance_metrics: true
+    output_format: rich  # or 'simple', 'json'
+    checkpoint_frequency: per_story  # Save progress after each story
+  
+  # Advanced Features
+  advanced:
+    parallel_stories: false  # Enable when stories are independent
+    predictive_qa: true  # Pre-identify potential QA issues
+    smart_dependencies: true  # Auto-detect story dependencies
+    optimization_mode: balanced  # or 'speed', 'quality'
+    learning_mode: true  # Capture patterns for future use

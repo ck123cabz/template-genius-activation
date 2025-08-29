@@ -1,0 +1,289 @@
+# Performance Optimizations for BMAD Orchestration
+
+performance:
+  version: 1.0
+  
+  # Context optimization
+  context_optimization:
+    lazy_loading:
+      enabled: true
+      strategies:
+        - load_on_demand: "Load files only when agent needs them"
+        - symbol_first: "Use Serena symbols before full files"
+        - cache_frequent: "Cache commonly accessed files"
+        - prune_old: "Remove context older than current story"
+    
+    compression:
+      techniques:
+        - summarize_completions: "Replace full story details with summaries"
+        - diff_only: "Show only changed files, not full files"
+        - key_points: "Extract key points from long documents"
+        - reference_links: "Use references instead of full content"
+      
+      thresholds:
+        trigger_compression: 80000  # tokens
+        max_compressed_size: 50000  # tokens
+        min_compression_ratio: 0.3  # 30% reduction minimum
+    
+    intelligent_pruning:
+      priority_order:
+        1: "current_story_context"
+        2: "recent_implementations"
+        3: "error_logs"
+        4: "completed_stories"
+        5: "historical_data"
+      
+      retention_rules:
+        current_story: "always_keep"
+        last_2_stories: "keep_summary"
+        older_stories: "keep_outcomes_only"
+        error_logs: "keep_recent_100"
+
+  # Parallel execution
+  parallel_execution:
+    story_independence_analysis:
+      criteria:
+        - no_shared_files: "Stories don't modify same files"
+        - no_dependencies: "Story doesn't depend on another"
+        - different_components: "Working on separate modules"
+        - isolated_tests: "Tests don't interfere"
+      
+      max_parallel: 3  # Maximum parallel stories
+      safety_factor: 0.8  # Only 80% confidence stories run parallel
+    
+    resource_management:
+      agent_pool:
+        max_sm_agents: 2
+        max_dev_agents: 3  # Higher for implementation
+        max_qa_agents: 2
+      
+      context_sharing:
+        shared_context: "Read-only shared memory"
+        private_context: "Per-agent working memory"
+        coordination_context: "Cross-agent communication"
+    
+    conflict_prevention:
+      file_locking: true
+      git_coordination: true
+      test_isolation: true
+      database_partitioning: true
+
+  # Agent performance tuning
+  agent_optimization:
+    sm_agent:
+      optimizations:
+        - template_caching: "Cache story templates"
+        - pattern_recognition: "Learn common story patterns"
+        - context_reduction: "Minimal epic context"
+        - validation_streamline: "Quick validation checks"
+      
+      target_metrics:
+        draft_time: "< 60 seconds"
+        context_tokens: "< 8000"
+        success_rate: "> 95%"
+    
+    dev_agent:
+      optimizations:
+        - serena_integration: "Use symbol navigation over file reading"
+        - incremental_builds: "Only rebuild changed components"
+        - test_parallelization: "Run tests in parallel"
+        - smart_commit_batching: "Batch related changes"
+      
+      target_metrics:
+        implementation_time: "< 10 minutes per story"
+        context_tokens: "< 100000"
+        test_pass_rate: "> 90%"
+        commit_success_rate: "> 98%"
+    
+    qa_agent:
+      optimizations:
+        - diff_analysis: "Review only changed code"
+        - risk_based_testing: "Focus on high-risk areas"
+        - automated_checks: "Pre-filter obvious issues"
+        - pattern_matching: "Recognize known good patterns"
+      
+      target_metrics:
+        review_time: "< 5 minutes per story"
+        context_tokens: "< 50000"
+        issue_detection_rate: "> 85%"
+
+  # Caching strategies
+  caching:
+    levels:
+      memory_cache:
+        type: "in_memory"
+        ttl: 300000  # 5 minutes
+        max_size: "100MB"
+        items:
+          - coding_standards
+          - tech_stack_info
+          - recent_patterns
+          - git_status
+      
+      disk_cache:
+        type: "persistent"
+        location: ".bmad-core/cache/"
+        ttl: 3600000  # 1 hour
+        items:
+          - project_structure
+          - architecture_summaries
+          - test_templates
+          - common_utilities
+      
+      distributed_cache:
+        type: "shared"
+        enabled: false  # For team environments
+        items:
+          - best_practices
+          - known_issues
+          - solution_patterns
+    
+    invalidation:
+      triggers:
+        - file_modification
+        - branch_switch
+        - config_change
+        - manual_clear
+      
+      strategies:
+        - timestamp_check
+        - content_hash
+        - dependency_tracking
+
+  # Resource management
+  resource_management:
+    limits:
+      max_concurrent_agents: 5
+      max_context_per_agent: 100000
+      max_file_operations_per_minute: 1000
+      max_git_operations_per_minute: 100
+    
+    monitoring:
+      metrics:
+        - cpu_usage
+        - memory_usage
+        - api_calls_per_minute
+        - file_io_operations
+        - network_bandwidth
+      
+      alerts:
+        - resource_exhaustion: "Usage > 90%"
+        - rate_limit_approaching: "Calls > 80% of limit"
+        - memory_leak: "Memory growth > 10MB/hour"
+    
+    optimization:
+      techniques:
+        - connection_pooling
+        - request_batching
+        - response_streaming
+        - lazy_initialization
+        - garbage_collection
+
+  # Network optimization
+  network:
+    api_optimization:
+      batching:
+        enabled: true
+        max_batch_size: 10
+        batch_timeout: 1000  # ms
+      
+      caching:
+        response_cache: true
+        cache_duration: 300000  # 5 minutes
+        cache_size_limit: "50MB"
+      
+      retry_logic:
+        max_retries: 3
+        backoff_strategy: "exponential"
+        base_delay: 1000  # ms
+    
+    git_optimization:
+      shallow_clones: true
+      partial_checkouts: true
+      delta_compression: true
+      pack_optimization: true
+
+  # Monitoring & metrics
+  monitoring:
+    real_time:
+      epic_progress:
+        - stories_completed_per_hour
+        - current_story_elapsed_time
+        - estimated_completion_time
+        - bottleneck_identification
+      
+      system_health:
+        - agent_response_times
+        - error_rates
+        - resource_utilization
+        - queue_depths
+    
+    historical:
+      trends:
+        - performance_improvement_over_time
+        - common_bottlenecks
+        - optimization_effectiveness
+        - resource_usage_patterns
+      
+      benchmarks:
+        - story_complexity_vs_time
+        - agent_performance_comparison
+        - optimization_impact_measurement
+
+  # Auto-scaling
+  auto_scaling:
+    triggers:
+      scale_up:
+        - queue_depth > 5
+        - average_wait_time > 120_seconds
+        - resource_utilization < 50%
+      
+      scale_down:
+        - queue_empty
+        - average_wait_time < 30_seconds
+        - resource_utilization > 80%
+    
+    strategies:
+      - add_agent_instances
+      - increase_parallel_execution
+      - optimize_context_loading
+      - enable_aggressive_caching
+
+  # Optimization learning
+  learning:
+    pattern_recognition:
+      - identify_slow_operations
+      - recognize_efficient_patterns
+      - detect_resource_waste
+      - predict_bottlenecks
+    
+    auto_tuning:
+      parameters:
+        - context_size_limits
+        - timeout_values
+        - cache_sizes
+        - parallel_execution_limits
+      
+      algorithms:
+        - gradient_descent: "For continuous parameters"
+        - a_b_testing: "For discrete options"
+        - reinforcement_learning: "For complex decisions"
+    
+    feedback_loop:
+      collect:
+        - execution_times
+        - resource_usage
+        - success_rates
+        - user_satisfaction
+      
+      analyze:
+        - correlation_analysis
+        - trend_detection
+        - anomaly_identification
+        - optimization_opportunities
+      
+      apply:
+        - parameter_adjustments
+        - algorithm_improvements
+        - architectural_changes
+        - workflow_optimizations

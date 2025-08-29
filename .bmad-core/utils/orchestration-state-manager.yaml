@@ -1,0 +1,290 @@
+# Orchestration State Management & Recovery System
+
+state_management:
+  version: 1.0
+  
+  # State persistence
+  persistence:
+    location: ".bmad-core/state/"
+    format: "json"
+    encryption: false  # Set true for sensitive data
+    
+    files:
+      current_state: "current-orchestration.json"
+      checkpoint_history: "checkpoints/"
+      handoff_log: "handoffs.jsonl"
+      error_log: "errors.jsonl"
+  
+  # State schema
+  state_schema:
+    orchestration_state:
+      epic_id: number
+      epic_status: "planning|in_progress|completed|failed"
+      current_story: string
+      completed_stories: array
+      pending_stories: array
+      failed_stories: array
+      iterative_learning:
+        previous_story_learnings: string
+        established_patterns: array
+        component_registry: object
+        architectural_decisions: array
+      
+      git_state:
+        current_branch: string
+        base_branch: string
+        commits: array
+        uncommitted_changes: boolean
+      
+      agent_states:
+        sm:
+          last_action: string
+          context_size: number
+          output_valid: boolean
+        dev:
+          last_action: string
+          files_modified: array
+          tests_status: string
+        qa:
+          last_action: string
+          gate_decision: string
+          issues_found: array
+      
+      timestamps:
+        started: datetime
+        last_checkpoint: datetime
+        estimated_completion: datetime
+  
+  # Checkpoint strategy
+  checkpointing:
+    automatic_triggers:
+      - story_completed
+      - agent_handoff_success
+      - git_commit_success
+      - quality_gate_pass
+    
+    manual_triggers:
+      - user_pause
+      - error_recovery
+      - context_reset
+    
+    checkpoint_content:
+      minimal:  # Quick saves
+        - orchestration_state
+        - current_story
+        - git_branch
+      
+      standard:  # Normal checkpoints
+        - orchestration_state
+        - agent_states
+        - recent_handoffs
+        - git_state
+      
+      comprehensive:  # Full state backup
+        - orchestration_state
+        - agent_states
+        - complete_handoff_history
+        - git_state
+        - file_snapshots
+        - memory_state
+    
+    retention:
+      keep_last_n: 10
+      keep_duration_days: 7
+      keep_error_checkpoints: true
+
+  # Recovery procedures
+  recovery:
+    strategies:
+      resume_from_checkpoint:
+        description: "Continue from last successful checkpoint"
+        when:
+          - clean_exit
+          - user_requested_pause
+          - minor_error
+        steps:
+          - load_checkpoint
+          - verify_git_state
+          - restore_agent_contexts
+          - continue_execution
+      
+      rollback_story:
+        description: "Undo current story and retry"
+        when:
+          - story_implementation_failed
+          - qa_gate_critical_fail
+        steps:
+          - git_reset_to_story_start
+          - clear_story_artifacts
+          - reset_agent_states
+          - retry_story
+      
+      partial_recovery:
+        description: "Recover specific component"
+        when:
+          - single_agent_failure
+          - git_conflict
+        steps:
+          - identify_failure_component
+          - restore_component_state
+          - retry_component_action
+      
+      full_reset:
+        description: "Complete epic reset"
+        when:
+          - critical_corruption
+          - unrecoverable_state
+        steps:
+          - archive_current_state
+          - reset_to_epic_start
+          - clean_all_artifacts
+          - restart_orchestration
+    
+    validation:
+      pre_recovery:
+        - check_git_clean
+        - verify_dependencies
+        - validate_checkpoint_integrity
+      
+      post_recovery:
+        - verify_state_consistency
+        - test_agent_connectivity
+        - validate_context_loading
+
+  # Handoff tracking
+  handoff_tracking:
+    log_format:
+      timestamp: datetime
+      from_agent: string
+      to_agent: string
+      story_id: string
+      context_size: number
+      validation_passed: boolean
+      data_transferred: object
+    
+    validation_rules:
+      sm_to_dev:
+        required_fields: ["story_file", "acceptance_criteria", "technical_notes"]
+        max_context_size: 8000
+      
+      dev_to_qa:
+        required_fields: ["implementation_summary", "test_results", "files_modified"]
+        max_context_size: 10000
+      
+      qa_to_dev:
+        required_fields: ["gate_decision", "required_fixes", "priority"]
+        max_context_size: 5000
+    
+    failure_handling:
+      retry_count: 3
+      backoff_ms: [1000, 3000, 5000]
+      fallback: "human_intervention"
+
+  # State monitoring
+  monitoring:
+    metrics:
+      orchestration_health:
+        - stories_per_hour
+        - average_story_time
+        - handoff_success_rate
+        - error_rate
+        - recovery_success_rate
+      
+      agent_performance:
+        sm:
+          - draft_time
+          - validation_success_rate
+        dev:
+          - implementation_time
+          - test_coverage
+          - commit_success_rate
+        qa:
+          - review_time
+          - issues_found_average
+          - gate_pass_rate
+      
+      resource_usage:
+        - context_tokens_used
+        - api_calls_made
+        - git_operations_count
+        - file_operations_count
+    
+    alerts:
+      critical:
+        - orchestration_stuck: "No progress for 30 minutes"
+        - repeated_failures: "Same error 3+ times"
+        - context_overflow: "Context > 90% of limit"
+      
+      warning:
+        - slow_progress: "Story taking 2x average time"
+        - high_error_rate: "Error rate > 20%"
+        - git_conflicts: "Merge conflicts detected"
+    
+    dashboards:
+      realtime:
+        - current_story_progress
+        - agent_activity
+        - error_stream
+      
+      summary:
+        - epic_progress_percentage
+        - completed_stories_count
+        - quality_metrics
+        - time_estimates
+
+  # Context overflow management
+  context_management:
+    limits:
+      sm_agent: 50000
+      dev_agent: 100000
+      qa_agent: 50000
+      orchestrator: 150000
+    
+    overflow_strategies:
+      compression:
+        - summarize_completed_stories
+        - prune_old_handoffs
+        - compress_file_paths
+      
+      rotation:
+        - archive_old_context
+        - start_fresh_context
+        - maintain_minimal_state
+      
+      splitting:
+        - break_large_stories
+        - parallel_sub_agents
+        - chunked_processing
+    
+    preservation:
+      critical_context:
+        - current_story
+        - recent_errors
+        - git_state
+        - active_handoff
+      
+      optional_context:
+        - completed_stories_detail
+        - historical_metrics
+        - learning_data
+
+  # Learning & optimization
+  learning:
+    capture:
+      - successful_patterns
+      - common_errors
+      - optimal_context_sizes
+      - effective_prompts
+      - recovery_strategies
+    
+    storage:
+      location: ".serena/memories/orchestration-learnings.md"
+      format: "markdown"
+      update_frequency: "per_epic"
+    
+    application:
+      - adjust_timeouts
+      - optimize_context_loading
+      - improve_error_handling
+      - refine_prompts
+      - predict_bottlenecks

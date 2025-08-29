@@ -1,0 +1,40 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# Type should be one of the following:
+# * feat: A new feature
+# * fix: A bug fix
+# * docs: Documentation only changes
+# * style: Changes that do not affect the meaning of the code
+# * refactor: A code change that neither fixes a bug nor adds a feature
+# * perf: A code change that improves performance
+# * test: Adding missing tests or correcting existing tests
+# * build: Changes that affect the build system or external dependencies
+# * ci: Changes to our CI configuration files and scripts
+# * chore: Other changes that don't modify src or test files
+# * revert: Reverts a previous commit
+
+# Scope is optional and should be the component affected:
+# * dashboard, auth, api, components, lib, docs, etc.
+
+# Subject should:
+# * use imperative mood ("add" not "added" or "adds")
+# * not capitalize first letter
+# * not end with a dot
+
+# Body should include the motivation for the change and contrast this with previous behavior
+
+# Footer should contain any information about Breaking Changes and reference GitHub issues
+
+# Examples:
+# feat(dashboard): add client export functionality
+# fix(auth): resolve token expiration issue  
+# docs(readme): update installation instructions
+
+# Remember to add Claude Code signature:
+# 🤖 Generated with [Claude Code](https://claude.ai/code)
+# 
+# Co-Authored-By: Claude <noreply@anthropic.com>

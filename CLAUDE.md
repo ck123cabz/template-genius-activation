@@ -1,160 +1,123 @@
-# CLAUDE.md
+# CLAUDE.md - Template Genius Revenue Intelligence Engine
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**High-level orchestration file for Claude Code. Detailed knowledge stored in `.serena/memories/` system.**
 
-## Development Commands
+## 🎯 Project Identity
+**Template Genius Revenue Intelligence Engine** - Connected journey learning system that captures conversion intelligence from every client interaction. Each client teaches us what drives revenue through hypothesis tracking, outcome recording, and pattern recognition.
 
-**Package Manager**: Use `pnpm` exclusively for all operations:
-
+## ⚡ Essential Commands  
 ```bash
-pnpm dev          # Start development server (Next.js 15.2.4)
-pnpm build        # Build production application
-pnpm start        # Start production server
-pnpm lint         # Run ESLint
-pnpm install      # Install dependencies
+pnpm dev          # Development server (port 3000)
+pnpm build        # Production build  
+pnpm lint         # Code quality
+docker-compose up # Docker development
 ```
 
-**Docker Development**: This project is fully containerized with Docker support for development:
+## 🧠 Knowledge Recovery System
+**For fresh context sessions, immediately use:**
 
 ```bash
-# Using Docker Compose (recommended)
-docker-compose up              # Build and start dev server
-docker-compose up --build      # Rebuild and start dev server
-docker-compose down            # Stop and remove containers
+# Auto-loads project memories
+mcp__serena__check_onboarding_performed
 
-# Using Docker directly
-docker build -t template-genius .     # Build image
-docker run -p 3000:3000 -v $(pwd):/app template-genius  # Run with volume mount
+# Quick references  
+docs/QUICK-REFERENCE.md           # Instant orientation
+docs/CONTEXT-RECOVERY-GUIDE.md    # Detailed recovery workflow
 ```
 
-**Docker Features**:
+**Key Memory Files** (access via `mcp__serena__read_memory`):
+- `project_overview.md` - Business context, goals, architecture
+- `tech_stack.md` - Complete technology stack + MCP servers
+- `code_style_conventions.md` - Development patterns, styling
+- `task_completion_workflow.md` - Git integration, testing workflow
+- `git_workflow_practices.md` - Branch strategy, commit conventions
+- `claude_code_git_integration.md` - Automated Git workflow
 
-- **Containerized Development**: Full development environment in Docker
-- **Hot Reload**: Enabled with volume mounting for live code changes
-- **Node.js 22 Alpine**: Optimized base image for performance
-- **Port Mapping**: Development server runs on port 3000 (mapped to host)
-- **Dependency Management**: Automatic pnpm dependency installation
-- **Volume Mounting**: Source code changes reflect immediately in container
-- **Multi-stage Build**: Optimized for both development and production
+## 🏗️ Revenue Intelligence Architecture
+- **Connected Journey**: 4-page client experience (activation → agreement → confirmation → processing)
+- **Learning Capture**: Hypothesis before changes, outcomes after interactions
+- **Pattern Recognition**: Identify what converts vs what doesn't
+- **Component Enhancement**: Extend existing components with learning fields
+- **Server Actions**: Next.js 15 patterns for learning operations
+- **Serena Memory**: Persistent learning across sessions
 
-**Docker Configuration**:
+## 🔄 Proactive Git Integration
+**Auto-workflow for every development task:**
+1. **Branch**: Auto-create `feature/task-name` from `develop`
+2. **Commit**: Component-level commits with conventional format + Claude signature
+3. **Test**: Playwright MCP testing after each change
+4. **Quality**: Automated lint/build checks
+5. **PR**: Auto-create pull requests with full context
+6. **Deploy**: GitHub Actions CI/CD pipeline
 
-- `Dockerfile`: Multi-stage build with development and production targets
-- `docker-compose.yml`: Development environment with volume mounting
-- `.dockerignore`: Excludes unnecessary files from build context
+## 🎯 Development Workflows
 
-**Why Docker?**: Docker ensures consistent development environments across all machines, eliminates "works on my machine" issues, and provides production-like environment for testing.
+### Standard Development Workflow
+```bash
+# Start session
+git checkout develop && git pull origin develop
+git checkout -b feature/task-name
+pnpm dev
 
-**Important**: This project has linting and TypeScript errors disabled during builds (`ignoreDuringBuilds: true` and `ignoreBuildErrors: true` in next.config.mjs). However, you should still fix any errors when modifying code.
+# During development  
+# Component-level commits with:
+git commit -m "feat(scope): description
 
-## Architecture Overview
+Details of change
 
-### Technology Stack
+🤖 Generated with [Claude Code](https://claude.ai/code)
 
-- **Framework**: Next.js 15.2.4 with App Router
-- **Language**: TypeScript with React 19
-- **Styling**: Tailwind CSS 4.1.9 with PostCSS
-- **UI Components**: Comprehensive Radix UI primitives + Shadcn/ui components
-- **Forms**: React Hook Form + Zod validation
-- **Fonts**: Geist Sans & Geist Mono from Google Fonts
-- **Icons**: Lucide React
+Co-Authored-By: Claude <noreply@anthropic.com>"
 
-### Project Structure
+# Testing
+mcp__playwright__browser_navigate --url "http://localhost:3000/dashboard"
+mcp__playwright__browser_take_screenshot
 
-**App Router Structure** (`/app/`):
+# Completion
+gh pr create --title "feat: description" --base develop
+```
 
-- Root page (`page.tsx`) redirects to `/dashboard`
-- Main dashboard at `/dashboard/page.tsx` - the core application interface
-- Client activation flow at `/activate/[token]/page.tsx`
-- Additional pages: `/agreement`, `/confirmation`, `/processing`
-- Multi-position sample at `/activate/multi-position-sample`
+### 🚀 BMAD-Orchestrated Development (NEW)
+**For structured feature development with automated workflow:**
 
-**Component Architecture** (`/components/`):
+```bash
+# Phase 1: Planning (Manual - Strategic Decisions)
+/pm *create-prd           # Define requirements
+/architect *create-full-stack-architecture  # Design system
+/po *shard-prd           # Create epics/stories
 
-- `ui/` - Complete Shadcn component library (40+ components)
-- `theme-provider.tsx` - Next-themes integration
-- All UI components use class-variance-authority (CVA) for variant management
-- Components follow Radix UI + Tailwind CSS pattern
+# Phase 2: Automated Epic Execution
+/bmad-execute-epic 1      # Serena orchestrates entire epic!
 
-**Key Architecture Decisions**:
+# What happens automatically:
+# ✓ SM agent drafts each story
+# ✓ Dev agent implements with Serena capabilities  
+# ✓ QA agent reviews and validates
+# ✓ Git commits with story references
+# ✓ Quality gates enforced
+# ✓ Progress tracking throughout
+```
 
-1. **Client-side state management**: Uses React state with no external state library
-2. **Styling approach**: Utility-first with Tailwind + semantic color system
-3. **Component composition**: Radix primitives + custom styling via CVA
-4. **Form handling**: React Hook Form with Zod schema validation
+**Benefits**: 90% reduction in manual commands, consistent quality, 5-10x faster delivery
 
-### Application Logic
+## 🛡️ Quality Gates
+- **Pre-commit**: `pnpm lint && pnpm build`
+- **Testing**: Playwright MCP browser automation
+- **Security**: No console.log in production, environment variables secured
+- **Documentation**: Keep memories updated with significant changes
 
-**Core Application**: Priority Access Dashboard for client activation management
+## 📋 Context Switching Protocol
+1. **Clear Claude Code context** (recommended for clean state)
+2. **Auto-recovery via Serena MCP** (loads all project knowledge)
+3. **Quick orientation** via `docs/QUICK-REFERENCE.md`
+4. **Specific knowledge** via memory system as needed
+5. **Continue development** with full context restored
 
-- **Dashboard** (`/app/dashboard/page.tsx`):
-  - **Client Management**: Create, edit, filter, and search client records
-  - **Content Management System**: Full-featured CMS for activation page customization
-  - **Preview Functionality**: Live preview of activation pages with current content
-  - **Supabase Integration**: Data persistence for both clients and content
-  - **Statistics Dashboard**: Real-time metrics and conversion tracking
-  - **Tabbed Interface**: Organized UI for clients vs content management
+## 🎪 Available MCP Servers
+- **Serena MCP** - Project memory, symbol navigation, code understanding
+- **Playwright MCP** - Browser automation, testing, screenshots
+- **IDE MCP** - Code diagnostics, TypeScript checking
 
-**Content Management Features**:
+---
 
-- **Dynamic Content Editing**: Title, subtitle, benefits, payment options, investment details
-- **Tabbed Content Editor**: Organized into Main Content, Benefits, Payment, and Details tabs
-- **Live Preview**: Real-time preview panel and full-page preview at `/activate/preview`
-- **Form Validation**: Proper validation states and error handling
-- **Toast Notifications**: User feedback for save operations
-- **Supabase Persistence**: Content changes saved to database
-
-**Data Flow**:
-
-- Mock client data structure with company info, contact details, status
-- Local state management for client list and content editing
-- Activation link generation based on client ID
-- Content editing system for customizing activation page text
-
-**Key Features**:
-
-- Client creation and status tracking
-- Dynamic content editing for activation pages
-- Statistics dashboard (total, activated, pending, conversion rates)
-- Activation link copying functionality
-
-### Utilities & Helpers
-
-**`/lib/utils.ts`**: Contains the essential `cn()` utility for className merging using clsx + tailwind-merge.
-
-**Path Aliases**: Uses `@/*` alias pointing to project root for imports.
-
-## Development Guidelines
-
-### Styling Conventions
-
-- Use the `cn()` utility for conditional className merging
-- Follow Shadcn component patterns for new UI elements
-- Leverage Tailwind's design tokens and color system
-- All components should support dark/light mode theming
-
-### Component Development
-
-- New UI components should extend existing Radix/Shadcn patterns
-- Use CVA for component variants and sizing
-- Follow the established component composition pattern
-- Maintain accessibility standards (Radix provides this foundation)
-
-### State Management
-
-- This is a client-side only application ("use client" components)
-- Use React's built-in state management (useState, useEffect)
-- No external state management library is needed for current scope
-- Form state handled by React Hook Form
-
-### Image Handling
-
-Images are currently unoptimized (`unoptimized: true` in next.config.mjs) and use external URLs or placeholder SVGs.
-
-### Mock Data Pattern
-
-The application uses in-component mock data with realistic business logic. When adding features, follow the established pattern of:
-
-1. Define TypeScript interfaces for data structures
-2. Create mock data that represents realistic business scenarios
-3. Implement local state management for data manipulation
+**This file intentionally kept concise. Full knowledge available via memory system for zero-context-loss development.**

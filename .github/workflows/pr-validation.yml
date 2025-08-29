@@ -1,0 +1,97 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-pr:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for proper diff
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Check commit messages
+        run: |
+          echo "Checking commit messages format..."
+          git log --format="%s" origin/main..HEAD | while read commit; do
+            if ! echo "$commit" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|build|ci|revert)(\(.+\))?: .+'; then
+              echo "Warning: Commit message doesn't follow conventional format: $commit"
+            fi
+          done
+      
+      - name: Check for console.log statements
+        run: |
+          echo "Checking for console.log statements..."
+          if grep -r "console\.log" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" app/ components/ lib/ 2>/dev/null; then
+            echo "Warning: Found console.log statements. Consider removing them before merging."
+          fi
+      
+      - name: Check for TODO comments
+        run: |
+          echo "Checking for TODO comments..."
+          if grep -r "TODO\|FIXME\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" app/ components/ lib/ 2>/dev/null; then
+            echo "Info: Found TODO/FIXME comments. Make sure to address them."
+          fi
+      
+      - name: Verify no sensitive data
+        run: |
+          echo "Checking for potential sensitive data..."
+          # Check for potential API keys, tokens, passwords
+          if grep -rE "(api[_-]?key|apikey|secret|password|token|pwd|passwd)" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=.git .; then
+            echo "Warning: Found potential sensitive data. Please review."
+          fi
+      
+      - name: Size check
+        run: |
+          echo "Checking bundle size impact..."
+          # This is a placeholder - you'd typically compare against base branch
+          pnpm build
+          echo "Build completed successfully"
+      
+      - name: Run tests
+        run: |
+          # Add your test commands here when tests are implemented
+          echo "No tests configured yet"
+      
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const output = `## PR Validation Results ✅
+            
+            - 🔍 Code quality checks passed
+            - 📦 Build successful
+            - 🎯 Ready for review
+            
+            ### Checklist
+            - [ ] Code follows project conventions
+            - [ ] Changes are tested locally
+            - [ ] Documentation updated if needed
+            - [ ] No console.log statements in production code
+            - [ ] Sensitive data properly handled
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });

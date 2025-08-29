@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -62,7 +63,8 @@ export default function ClientList({ initialClients }: ClientListProps) {
     const matchesSearch =
       client.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase());
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.token.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" || client.status === statusFilter;
@@ -193,7 +195,7 @@ export default function ClientList({ initialClients }: ClientListProps) {
               Create Client
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Client</DialogTitle>
             </DialogHeader>
@@ -222,6 +224,20 @@ export default function ClientList({ initialClients }: ClientListProps) {
                   placeholder="$120,000"
                   required
                 />
+              </div>
+              <div>
+                <Label htmlFor="hypothesis">Journey Hypothesis *</Label>
+                <Textarea
+                  id="hypothesis"
+                  name="hypothesis"
+                  placeholder="What drives this client's conversion? E.g., seeking better work-life balance, career growth, or remote flexibility..."
+                  required
+                  rows={3}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Describe your hypothesis about what motivates this client to convert
+                </p>
               </div>
               <div>
                 <Label htmlFor="logo">Logo URL (Optional)</Label>
@@ -319,6 +335,20 @@ export default function ClientList({ initialClients }: ClientListProps) {
                 <p className="text-sm">
                   <span className="font-medium">Salary:</span> {client.salary}
                 </p>
+                <p className="text-sm">
+                  <span className="font-medium">Token:</span>{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+                    {client.token}
+                  </code>
+                </p>
+                <div className="border-t pt-2 mt-2">
+                  <p className="text-sm">
+                    <span className="font-medium">Journey Hypothesis:</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {client.hypothesis}
+                  </p>
+                </div>
                 <div className="flex items-center justify-between pt-2">
                   <Badge
                     variant={

@@ -1,0 +1,166 @@
+# Git Branch Management Strategy for BMAD Orchestration
+
+branch_strategy:
+  version: 1.0
+  
+  # Branch naming conventions
+  naming:
+    epic_branch: "feature/epic-{epic_number}-{epic_slug}"
+    story_branch: "feature/epic-{epic_number}/story-{story_number}-{story_slug}"
+    hotfix_branch: "hotfix/{issue_number}-{description}"
+    qa_branch: "qa/epic-{epic_number}-{timestamp}"
+  
+  # Branch lifecycle
+  lifecycle:
+    epic_start:
+      - action: "create_epic_branch"
+        from: "develop"  # or 'main' based on git flow
+        commands:
+          - "git checkout develop"
+          - "git pull origin develop"
+          - "git checkout -b feature/epic-{epic_number}-{epic_slug}"
+          - "git push -u origin feature/epic-{epic_number}-{epic_slug}"
+      
+    story_start:
+      - action: "create_story_branch"
+        from: "epic_branch"
+        when: "parallel_execution"
+        commands:
+          - "git checkout feature/epic-{epic_number}-{epic_slug}"
+          - "git pull origin feature/epic-{epic_number}-{epic_slug}"
+          - "git checkout -b feature/epic-{epic_number}/story-{story_number}"
+      
+    story_complete:
+      - action: "merge_story_branch"
+        to: "epic_branch"
+        when: "parallel_execution"
+        commands:
+          - "git checkout feature/epic-{epic_number}-{epic_slug}"
+          - "git merge --no-ff feature/epic-{epic_number}/story-{story_number}"
+          - "git push origin feature/epic-{epic_number}-{epic_slug}"
+      
+    epic_complete:
+      - action: "create_pull_request"
+        from: "epic_branch"
+        to: "develop"
+        commands:
+          - "git checkout feature/epic-{epic_number}-{epic_slug}"
+          - "git push origin feature/epic-{epic_number}-{epic_slug}"
+          - "gh pr create --base develop --title 'Epic {epic_number}: {epic_title}' --body-file .bmad-core/pr-template.md"
+
+  # Conflict resolution
+  conflict_handling:
+    detection:
+      - check_before_merge: true
+      - use_merge_base: true
+      - commands:
+        - "git merge-base HEAD origin/develop"
+        - "git diff --name-only HEAD origin/develop"
+    
+    resolution_strategy:
+      automatic:
+        - package_lock: "theirs"  # Always take incoming for lock files
+        - generated_files: "ours"  # Keep our generated files
+        - documentation: "merge"  # Try automatic merge
+      
+      manual:
+        - source_code: "request_human"
+        - config_files: "request_human"
+        - database_schemas: "request_human"
+    
+    prevention:
+      - rebase_regularly: true
+      - rebase_frequency: "after_each_story"
+      - commands:
+        - "git fetch origin develop"
+        - "git rebase origin/develop"
+
+  # Parallel work management
+  parallel_work:
+    strategy: "feature_flags"  # or 'branch_isolation'
+    
+    feature_flags:
+      config_file: "config/features.json"
+      naming: "epic_{epic_number}_story_{story_number}"
+      default_state: "disabled"
+      activation: "after_qa_pass"
+    
+    branch_isolation:
+      max_parallel_branches: 3
+      merge_order: "dependency_based"  # or 'story_number'
+      integration_tests: "after_each_merge"
+
+  # Commit standards
+  commit_standards:
+    format: "conventional"
+    template: |
+      {type}(epic-{epic_number}): {story_title}
+      
+      - Story: BMAD-{story_number}
+      - Implementation: {implementation_summary}
+      - Tests: {test_summary}
+      
+      🤖 Generated with [Claude Code](https://claude.ai/code)
+      
+      Co-Authored-By: Claude <noreply@anthropic.com>
+    
+    types:
+      - feat: "New feature"
+      - fix: "Bug fix"
+      - test: "Test additions"
+      - docs: "Documentation"
+      - refactor: "Code refactoring"
+      - perf: "Performance improvement"
+    
+    validation:
+      - enforce_format: true
+      - require_story_reference: true
+      - require_tests: true
+
+  # Rollback procedures
+  rollback:
+    triggers:
+      - qa_gate_fail: true
+      - integration_test_fail: true
+      - performance_regression: true
+    
+    strategies:
+      story_level:
+        - "git revert {commit_hash}"
+        - "git push origin {branch}"
+      
+      epic_level:
+        - "git checkout develop"
+        - "git branch -D feature/epic-{epic_number}-{epic_slug}"
+        - "git push origin --delete feature/epic-{epic_number}-{epic_slug}"
+      
+      feature_flag:
+        - "disable_flag epic_{epic_number}"
+        - "deploy_config_change"
+
+  # Branch protection
+  protection_rules:
+    epic_branches:
+      - require_pr_reviews: 1
+      - dismiss_stale_reviews: true
+      - require_status_checks: ["lint", "test", "build"]
+      - restrict_push: ["bmad-orchestrator"]
+    
+    develop:
+      - require_pr_reviews: 2
+      - require_status_checks: ["lint", "test", "build", "e2e"]
+      - require_up_to_date: true
+      - restrict_push: ["maintainers"]
+
+  # Cleanup
+  cleanup:
+    triggers:
+      - epic_merged: true
+      - epic_abandoned: true
+      - age_days: 30
+    
+    actions:
+      - delete_story_branches: true
+      - delete_epic_branch: true
+      - archive_pr: true
+      - update_docs: true

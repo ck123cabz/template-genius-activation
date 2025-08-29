@@ -8,12 +8,44 @@ export async function createClient(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string; client?: Client }> {
   try {
+    const hypothesis = formData.get("hypothesis") as string;
+    
+    // Validate required hypothesis field
+    if (!hypothesis || hypothesis.trim().length === 0) {
+      return { success: false, error: "Journey hypothesis is required" };
+    }
+
+    // Generate unique client token in G[4-digit] format
+    const generateToken = async (): Promise<string> => {
+      const maxAttempts = 100;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const randomNum = Math.floor(Math.random() * 10000);
+        const token = `G${randomNum.toString().padStart(4, '0')}`;
+        
+        // Check if token already exists
+        const { data: existing } = await supabaseServer
+          .from("clients")
+          .select("id")
+          .eq("token", token)
+          .single();
+          
+        if (!existing) {
+          return token;
+        }
+      }
+      throw new Error("Unable to generate unique token after multiple attempts");
+    };
+
+    const token = await generateToken();
+
     const client = {
       company: formData.get("company") as string,
       contact: formData.get("contact") as string,
       email: formData.get("email") as string,
       position: formData.get("position") as string,
       salary: formData.get("salary") as string,
+      hypothesis: hypothesis.trim(),
+      token,
       logo: (formData.get("logo") as string) || null,
     };
 

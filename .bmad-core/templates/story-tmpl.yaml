@@ -74,7 +74,9 @@ sections:
       Populate relevant information, only what was pulled from actual artifacts from docs folder, relevant to this story:
       - Do not invent information
       - If known add Relevant Source Tree info that relates to this story
-      - If there were important notes from previous story that are relevant to this one, include them here
+      - ITERATIVE LEARNING: Include important patterns/components from previous stories in this epic
+      - Reference existing components that should be reused or extended
+      - Note architectural decisions from previous stories that affect this one
       - Put enough information in this section so that the dev agent should NEVER need to read the architecture documents, these notes along with the tasks and subtasks must give the Dev Agent the complete context it needs to comprehend with the least amount of overhead the information to complete the story, meeting all AC and completing all tasks+subtasks
     elicit: true
     owner: scrum-master
@@ -91,6 +93,17 @@ sections:
         elicit: true
         owner: scrum-master
         editors: [scrum-master]
+
+  - id: iterative-context
+    title: Previous Story Learnings
+    instruction: |
+      Context from previous stories in this epic (populated by orchestrator):
+      - Components/patterns established in previous stories
+      - Architectural decisions that affect this story
+      - Testing patterns to follow or extend
+      - Common issues encountered and solutions
+    owner: bmad-orchestrator
+    editors: [scrum-master]
 
   - id: change-log
     title: Change Log

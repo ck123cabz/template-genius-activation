@@ -1,0 +1,108 @@
+# Agent Handoff Protocol
+# Ensures clean state transfer between BMAD agents during orchestration
+
+handoff_protocol:
+  version: 1.0
+  
+  # State preservation between agents
+  state_transfer:
+    # What gets passed from SM to Dev
+    sm_to_dev:
+      required:
+        - story_file_path
+        - acceptance_criteria
+        - technical_notes
+        - dependencies
+        - risk_level
+      optional:
+        - previous_story_implementation
+        - previous_story_learnings  # From Dev Agent Record + QA findings
+        - established_patterns      # Components/patterns from previous stories
+        - architecture_patterns
+        - component_registry        # Existing components to reuse/extend
+        - suggested_approach
+      validation:
+        - story_status: "Approved"
+        - dev_notes_present: true
+    
+    # What gets passed from Dev to QA
+    dev_to_qa:
+      required:
+        - story_file_path
+        - implementation_summary
+        - files_modified
+        - tests_added
+        - commit_hashes
+      optional:
+        - performance_metrics
+        - known_issues
+        - integration_points
+      validation:
+        - tests_passing: true
+        - lint_clean: true
+        - types_valid: true
+    
+    # QA feedback loop to Dev
+    qa_to_dev:
+      required:
+        - gate_decision
+        - issues_found
+        - required_fixes
+        - priority_order
+      optional:
+        - suggested_refactoring
+        - performance_concerns
+        - security_issues
+      validation:
+        - gate_file_created: true
+        - feedback_actionable: true
+
+  # Context preservation
+  context_management:
+    # Each agent maintains its own context file
+    context_files:
+      sm: ".bmad-core/context/sm-context.json"
+      dev: ".bmad-core/context/dev-context.json"
+      qa: ".bmad-core/context/qa-context.json"
+    
+    # What context to preserve
+    preserved_data:
+      - current_epic
+      - current_story
+      - completed_stories
+      - pending_stories
+      - discovered_patterns
+      - common_issues
+      - architectural_decisions
+    
+    # Context reset points
+    reset_triggers:
+      - epic_completion
+      - critical_failure
+      - manual_override
+
+  # Handoff validation
+  validation_gates:
+    pre_handoff:
+      - verify_required_fields
+      - validate_file_paths
+      - check_git_status
+      - confirm_branch_correct
+    
+    post_handoff:
+      - verify_agent_loaded
+      - confirm_context_received
+      - validate_capabilities_available
+      - check_memory_loaded
+
+  # Error recovery
+  handoff_failures:
+    retry_strategy:
+      max_attempts: 3
+      backoff_ms: [1000, 3000, 5000]
+    
+    fallback_options:
+      - restore_from_checkpoint
+      - request_human_intervention
+      - skip_to_next_story
+      - abort_epic_execution
