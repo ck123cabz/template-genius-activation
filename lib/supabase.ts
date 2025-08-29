@@ -16,6 +16,39 @@ export interface Client {
   logo: string | null;
 }
 
+// Journey page types and status enums
+export type JourneyPageType = 'activation' | 'agreement' | 'confirmation' | 'processing';
+export type JourneyPageStatus = 'pending' | 'active' | 'completed' | 'skipped';
+
+// Journey page interface
+export interface JourneyPage {
+  id: number;
+  client_id: number;
+  page_type: JourneyPageType;
+  page_order: number;
+  title: string;
+  content: string | null;
+  status: JourneyPageStatus;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+}
+
+// Extended client interface with journey pages
+export interface ClientWithJourney extends Client {
+  journey_pages?: JourneyPage[];
+}
+
+// Journey progress summary
+export interface JourneyProgress {
+  total_pages: number;
+  completed_pages: number;
+  active_page: JourneyPage | null;
+  progress_percentage: number;
+  current_step: number;
+}
+
 export interface ActivationContent {
   id: number;
   title: string;
@@ -111,6 +144,129 @@ const mockClients: Client[] = [
     logo: "/techcorp-logo.png",
   },
 ];;
+// Mock journey page templates
+export const mockJourneyPageTemplates: Omit<JourneyPage, 'id' | 'client_id' | 'created_at' | 'updated_at' | 'completed_at'>[] = [
+  {
+    page_type: 'activation',
+    page_order: 1,
+    title: 'Welcome to Template Genius',
+    content: 'Begin your personalized template journey with us. We\'ll guide you through each step to create the perfect solution for your needs.',
+    status: 'pending',
+    metadata: {
+      estimated_time: '5 minutes',
+      key_features: ['Personalized approach', 'Expert guidance', 'Custom solutions']
+    }
+  },
+  {
+    page_type: 'agreement',
+    page_order: 2,
+    title: 'Service Agreement',
+    content: 'Review and accept our service terms and your project scope. This ensures we\'re aligned on deliverables and expectations.',
+    status: 'pending',
+    metadata: {
+      estimated_time: '10 minutes',
+      requires_signature: true,
+      legal_review_available: true
+    }
+  },
+  {
+    page_type: 'confirmation',
+    page_order: 3,
+    title: 'Project Confirmation',
+    content: 'Confirm your project details and timeline. We\'ll finalize all specifications before beginning work.',
+    status: 'pending',
+    metadata: {
+      estimated_time: '7 minutes',
+      editable_details: ['timeline', 'requirements', 'preferences']
+    }
+  },
+  {
+    page_type: 'processing',
+    page_order: 4,
+    title: 'Processing Your Request',
+    content: 'We are preparing your custom templates. You\'ll receive updates throughout the creation process.',
+    status: 'pending',
+    metadata: {
+      estimated_time: '2-5 business days',
+      automated_updates: true,
+      progress_tracking: true
+    }
+  }
+];
+
+// Mock journey pages for existing clients
+export const mockJourneyPages: JourneyPage[] = [
+  // Journey pages for client ID 1 (TechCorp Solutions)
+  {
+    id: 1,
+    client_id: 1,
+    page_type: 'activation',
+    page_order: 1,
+    title: 'Welcome to Template Genius',
+    content: 'Begin your personalized template journey with us. We\'ll guide you through each step to create the perfect solution for your needs.',
+    status: 'completed',
+    metadata: {
+      estimated_time: '5 minutes',
+      key_features: ['Personalized approach', 'Expert guidance', 'Custom solutions'],
+      completed_by: 'john@techcorp.com',
+      completion_notes: 'Client expressed interest in automated solutions'
+    },
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:30:00Z',
+    completed_at: '2024-01-15T00:30:00Z'
+  },
+  {
+    id: 2,
+    client_id: 1,
+    page_type: 'agreement',
+    page_order: 2,
+    title: 'Service Agreement',
+    content: 'Review and accept our service terms and your project scope. This ensures we\'re aligned on deliverables and expectations.',
+    status: 'active',
+    metadata: {
+      estimated_time: '10 minutes',
+      requires_signature: true,
+      legal_review_available: true,
+      started_at: '2024-01-15T00:30:00Z'
+    },
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:30:00Z',
+    completed_at: null
+  },
+  {
+    id: 3,
+    client_id: 1,
+    page_type: 'confirmation',
+    page_order: 3,
+    title: 'Project Confirmation',
+    content: 'Confirm your project details and timeline. We\'ll finalize all specifications before beginning work.',
+    status: 'pending',
+    metadata: {
+      estimated_time: '7 minutes',
+      editable_details: ['timeline', 'requirements', 'preferences']
+    },
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:00:00Z',
+    completed_at: null
+  },
+  {
+    id: 4,
+    client_id: 1,
+    page_type: 'processing',
+    page_order: 4,
+    title: 'Processing Your Request',
+    content: 'We are preparing your custom templates. You\'ll receive updates throughout the creation process.',
+    status: 'pending',
+    metadata: {
+      estimated_time: '2-5 business days',
+      automated_updates: true,
+      progress_tracking: true
+    },
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:00:00Z',
+    completed_at: null
+  }
+];
 
 const mockContent = {
   id: 1,

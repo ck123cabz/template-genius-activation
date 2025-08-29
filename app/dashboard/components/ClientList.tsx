@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,7 @@ import {
   Copy,
   Eye,
   CheckCircle,
+  Route,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -29,13 +30,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Client } from "@/lib/supabase";
+import { Client, JourneyProgress, JourneyPage } from "@/lib/supabase";
 import {
   createClient,
   updateClientStatus,
   deleteClient,
 } from "@/app/actions/client-actions";
+import { getClientJourneyProgress } from "@/app/actions/journey-actions";
 import { useFormState } from "react-dom";
+import { JourneyProgressCompact, JourneyStatusBadge } from "./JourneyProgress";
 
 interface ClientListProps {
   initialClients: Client[];
@@ -47,17 +50,53 @@ export default function ClientList({ initialClients }: ClientListProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [journeyProgressMap, setJourneyProgressMap] = useState<Map<number, JourneyProgress>>(new Map());
 
   const [createState, createAction] = useFormState(
     async (prevState: any, formData: FormData) => {
       const result = await createClient(formData);
       if (result.success) {
         setIsCreateDialogOpen(false);
+        // Load journey progress for the new client
+        if (result.client) {
+          loadJourneyProgress(result.client.id);
+        }
       }
       return result;
     },
     { success: false },
   );
+
+  // Load journey progress for all clients
+  useEffect(() => {
+    const loadAllJourneyProgress = async () => {
+      const progressMap = new Map<number, JourneyProgress>();
+      
+      for (const client of clients) {
+        await loadJourneyProgress(client.id, progressMap);
+      }
+      
+      setJourneyProgressMap(progressMap);
+    };
+
+    loadAllJourneyProgress();
+  }, [clients]);
+
+  // Helper function to load journey progress for a specific client
+  const loadJourneyProgress = async (clientId: number, targetMap?: Map<number, JourneyProgress>) => {
+    try {
+      const result = await getClientJourneyProgress(clientId);
+      if (result.success && result.progress) {
+        const mapToUpdate = targetMap || new Map(journeyProgressMap);
+        mapToUpdate.set(clientId, result.progress);
+        if (!targetMap) {
+          setJourneyProgressMap(mapToUpdate);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to load journey progress for client ${clientId}:`, error);
+    }
+  };
 
   const filteredClients = clients.filter((client) => {
     const matchesSearch =
@@ -349,6 +388,25 @@ export default function ClientList({ initialClients }: ClientListProps) {
                     {client.hypothesis}
                   </p>
                 </div>
+                {/* Journey Progress Section */}
+                {journeyProgressMap.has(client.id) && (
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium flex items-center">
+                        <Route className="w-4 h-4 mr-1 text-blue-600" />
+                        Journey Progress
+                      </p>
+                      <JourneyStatusBadge 
+                        progress={journeyProgressMap.get(client.id)!} 
+                        className="text-xs"
+                      />
+                    </div>
+                    <JourneyProgressCompact 
+                      progress={journeyProgressMap.get(client.id)!}
+                      className="mb-2"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-between pt-2">
                   <Badge
                     variant={

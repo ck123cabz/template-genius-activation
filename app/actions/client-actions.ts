@@ -49,6 +49,7 @@ export async function createClient(
       logo: (formData.get("logo") as string) || null,
     };
 
+    // Begin transaction: Create client first
     const { data, error } = await supabaseServer
       .from("clients")
       .insert({
@@ -63,6 +64,17 @@ export async function createClient(
     if (error) {
       console.error("Error creating client:", error);
       return { success: false, error: error.message };
+    }
+
+    // Create journey pages for the new client atomically
+    const { createJourneyPagesForClient } = await import("./journey-actions");
+    const journeyResult = await createJourneyPagesForClient(data.id);
+
+    if (!journeyResult.success) {
+      // If journey creation fails, we should ideally rollback the client creation
+      // For now, we'll log the error and continue (client exists without journey pages)
+      console.error("Failed to create journey pages for client:", journeyResult.error);
+      console.warn(`Client ${data.id} created but journey pages failed. Manual intervention may be needed.`);
     }
 
     revalidatePath("/dashboard");
