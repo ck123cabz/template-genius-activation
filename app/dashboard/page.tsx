@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { supabase, clientService, contentService, AgreementContent, ConfirmationContent } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Users, FileText } from "lucide-react";
+import { Users, FileText, BarChart3 } from "lucide-react";
 import ClientList from "@/app/dashboard/components/ClientList";
+import LearningAnalytics from "@/app/dashboard/components/LearningAnalytics";
 
 const defaultContent = {
   activation: {
@@ -142,7 +143,7 @@ export default function DashboardPage() {
                   Priority Access Dashboard
                 </h1>
                 <p className="text-muted-foreground">
-                  Manage client activations and content
+                  Manage client activations and learning insights
                 </p>
               </div>
             </div>
@@ -152,7 +153,7 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <Tabs defaultValue="clients" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Client Management
@@ -160,6 +161,10 @@ export default function DashboardPage() {
             <TabsTrigger value="content" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Content Management
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Learning Analytics
             </TabsTrigger>
           </TabsList>
 
@@ -186,6 +191,10 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <LearningAnalytics />
           </TabsContent>
         </Tabs>
       </div>

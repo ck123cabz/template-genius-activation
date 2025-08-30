@@ -977,3 +977,294 @@ export const contentService = {
     }
   },
 };
+
+// Learning Analytics Service - Story 2.3
+export const learningService = {
+  // Get all content hypotheses with analytics
+  async getAllHypotheses(): Promise<ContentHypothesis[]> {
+    if (!useSupabase) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Mock learning data for development
+      return [
+        {
+          id: 1,
+          journey_page_id: 1,
+          hypothesis: "Emphasizing career advancement will increase activation rate by 25%",
+          change_type: 'content',
+          predicted_outcome: "Higher conversion rate for career-focused professionals",
+          confidence_level: 8,
+          previous_content: "Standard job placement offer",
+          new_content: "Career advancement and growth opportunities focus",
+          created_at: "2024-01-15T10:00:00Z",
+          created_by: "admin",
+          status: 'validated',
+          outcome_recorded_at: "2024-01-20T15:30:00Z",
+          actual_outcome: "Activation rate increased from 15% to 22% for target segment",
+          conversion_impact: { before: 0.15, after: 0.22, lift: 0.07 },
+          metadata: { client_segment: "career_focused", test_duration_days: 5 }
+        },
+        {
+          id: 2,
+          journey_page_id: 2,
+          hypothesis: "Simplifying agreement language will reduce drop-off by 40%",
+          change_type: 'content',
+          predicted_outcome: "Lower abandonment rate at agreement step",
+          confidence_level: 7,
+          previous_content: "Complex legal language in service agreement",
+          new_content: "Plain English explanation with visual highlights",
+          created_at: "2024-01-18T09:15:00Z",
+          created_by: "admin",
+          status: 'active',
+          conversion_impact: {},
+          metadata: { page_type: "agreement", test_status: "ongoing" }
+        },
+        {
+          id: 3,
+          journey_page_id: 3,
+          hypothesis: "Adding urgency messaging will increase completion rate",
+          change_type: 'both',
+          predicted_outcome: "Faster progression through confirmation step",
+          confidence_level: 6,
+          previous_content: "Standard confirmation messaging",
+          new_content: "Limited time priority access messaging",
+          created_at: "2024-01-22T14:45:00Z",
+          created_by: "admin",
+          status: 'invalidated',
+          outcome_recorded_at: "2024-01-25T16:20:00Z",
+          actual_outcome: "No significant impact on completion rate, slight negative reaction",
+          conversion_impact: { before: 0.78, after: 0.75, lift: -0.03 },
+          metadata: { test_conclusion: "urgency_ineffective", client_feedback: "negative" }
+        }
+      ];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("content_hypotheses")
+        .select(`
+          *,
+          journey_pages (
+            page_type,
+            title,
+            client_id,
+            clients (
+              company,
+              contact
+            )
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.warn("Learning analytics query failed, using mock data:", error);
+      return [];
+    }
+  },
+
+  // Get analytics summary for dashboard
+  async getAnalyticsSummary() {
+    if (!useSupabase) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return {
+        total_hypotheses: 3,
+        validated_count: 1,
+        invalidated_count: 1,
+        active_count: 1,
+        avg_confidence: 7.0,
+        total_conversion_lift: 0.04,
+        success_rate: 0.33,
+        recent_learnings: 2
+      };
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('get_learning_summary');
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.warn("Learning summary query failed:", error);
+      return {
+        total_hypotheses: 0,
+        validated_count: 0,
+        invalidated_count: 0,
+        active_count: 0,
+        avg_confidence: 0,
+        total_conversion_lift: 0,
+        success_rate: 0,
+        recent_learnings: 0
+      };
+    }
+  },
+
+  // Get conversion patterns by segment
+  async getConversionPatterns() {
+    if (!useSupabase) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      return {
+        by_page_type: {
+          activation: { success_rate: 0.65, avg_lift: 0.08, hypothesis_count: 5 },
+          agreement: { success_rate: 0.40, avg_lift: 0.02, hypothesis_count: 3 },
+          confirmation: { success_rate: 0.25, avg_lift: -0.01, hypothesis_count: 4 }
+        },
+        by_change_type: {
+          content: { success_rate: 0.55, avg_lift: 0.05, hypothesis_count: 7 },
+          title: { success_rate: 0.42, avg_lift: 0.03, hypothesis_count: 3 },
+          both: { success_rate: 0.33, avg_lift: 0.01, hypothesis_count: 2 }
+        },
+        success_factors: [
+          { factor: "Career-focused messaging", impact: 0.12, confidence: 0.85 },
+          { factor: "Simplified language", impact: 0.08, confidence: 0.72 },
+          { factor: "Visual hierarchy", impact: 0.06, confidence: 0.68 }
+        ]
+      };
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('get_conversion_patterns');
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.warn("Conversion patterns query failed:", error);
+      return { by_page_type: {}, by_change_type: {}, success_factors: [] };
+    }
+  },
+
+  // Create new hypothesis
+  async createHypothesis(hypothesis: Omit<ContentHypothesis, 'id' | 'created_at' | 'status'>): Promise<ContentHypothesis> {
+    if (!useSupabase) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const mockHypothesis: ContentHypothesis = {
+        id: Date.now(),
+        ...hypothesis,
+        created_at: new Date().toISOString(),
+        status: 'active',
+      };
+      return mockHypothesis;
+    }
+
+    const { data, error } = await supabase
+      .from("content_hypotheses")
+      .insert({
+        ...hypothesis,
+        created_at: new Date().toISOString(),
+        status: 'active',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Update hypothesis outcome
+  async recordOutcome(
+    hypothesisId: number, 
+    outcome: {
+      actual_outcome: string;
+      conversion_impact: Record<string, any>;
+      status: ContentHypothesisStatus;
+      metadata?: Record<string, any>;
+    }
+  ): Promise<ContentHypothesis> {
+    if (!useSupabase) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Return mock updated hypothesis
+      const mockUpdate = {
+        id: hypothesisId,
+        journey_page_id: 1,
+        hypothesis: "Updated hypothesis",
+        change_type: 'content' as ContentChangeType,
+        created_at: new Date().toISOString(),
+        created_by: "admin",
+        outcome_recorded_at: new Date().toISOString(),
+        conversion_impact: {},
+        metadata: {},
+        ...outcome
+      };
+      return mockUpdate;
+    }
+
+    const { data, error } = await supabase
+      .from("content_hypotheses")
+      .update({
+        ...outcome,
+        outcome_recorded_at: new Date().toISOString()
+      })
+      .eq("id", hypothesisId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Search hypotheses
+  async searchHypotheses(filters: {
+    status?: ContentHypothesisStatus;
+    page_type?: JourneyPageType;
+    change_type?: ContentChangeType;
+    date_from?: string;
+    date_to?: string;
+    search_term?: string;
+  }): Promise<ContentHypothesis[]> {
+    const allHypotheses = await this.getAllHypotheses();
+    
+    return allHypotheses.filter(hypothesis => {
+      if (filters.status && hypothesis.status !== filters.status) return false;
+      if (filters.change_type && hypothesis.change_type !== filters.change_type) return false;
+      if (filters.search_term) {
+        const searchLower = filters.search_term.toLowerCase();
+        if (!hypothesis.hypothesis.toLowerCase().includes(searchLower) &&
+            !hypothesis.actual_outcome?.toLowerCase().includes(searchLower)) return false;
+      }
+      if (filters.date_from && hypothesis.created_at < filters.date_from) return false;
+      if (filters.date_to && hypothesis.created_at > filters.date_to) return false;
+      return true;
+    });
+  },
+
+  // Export learning data
+  async exportLearningData(format: 'csv' | 'json' = 'json') {
+    const hypotheses = await this.getAllHypotheses();
+    const summary = await this.getAnalyticsSummary();
+    const patterns = await this.getConversionPatterns();
+
+    const exportData = {
+      generated_at: new Date().toISOString(),
+      summary,
+      patterns,
+      hypotheses,
+      metadata: {
+        total_records: hypotheses.length,
+        format,
+        version: "1.0"
+      }
+    };
+
+    if (format === 'csv') {
+      // Convert to CSV format
+      const csvHeaders = [
+        'id', 'hypothesis', 'status', 'change_type', 'confidence_level',
+        'predicted_outcome', 'actual_outcome', 'created_at', 'outcome_recorded_at'
+      ];
+      
+      const csvRows = hypotheses.map(h => [
+        h.id,
+        `"${h.hypothesis.replace(/"/g, '""')}"`,
+        h.status,
+        h.change_type,
+        h.confidence_level || '',
+        `"${(h.predicted_outcome || '').replace(/"/g, '""')}"`,
+        `"${(h.actual_outcome || '').replace(/"/g, '""')}"`,
+        h.created_at,
+        h.outcome_recorded_at || ''
+      ]);
+
+      return [csvHeaders.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+    }
+
+    return exportData;
+  }
+};
