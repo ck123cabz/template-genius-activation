@@ -954,3 +954,6 @@ export const contentService = {
     }
   },
 };
+
+// Export mock data for development fallback
+export { mockClients };

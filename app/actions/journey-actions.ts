@@ -578,3 +578,67 @@ export async function recordJourneyPageEdit(
     return { success: false, error: "Failed to record edit" };
   }
 }
+
+/**
+ * Updates a journey page by client ID and page type
+ * Story 1.2: Multi-page journey infrastructure support
+ */
+export async function updateClientJourneyPageByType(
+  clientId: number,
+  pageType: JourneyPageType,
+  content: any,
+  metadata?: any
+): Promise<{ success: boolean; error?: string; page?: JourneyPage }> {
+  try {
+    // First get the page to update
+    const pageResult = await getClientJourneyPageByType(clientId, pageType);
+    if (!pageResult.success || !pageResult.page) {
+      return { success: false, error: pageResult.error || "Journey page not found" };
+    }
+
+    const pageId = pageResult.page.id;
+    const updateData: any = {
+      content: typeof content === 'string' ? content : JSON.stringify(content),
+      updated_at: new Date().toISOString()
+    };
+
+    // If metadata provided, merge it with existing metadata
+    if (metadata) {
+      const existingMetadata = pageResult.page.metadata || {};
+      updateData.metadata = {
+        ...existingMetadata,
+        ...metadata,
+        last_edit_at: new Date().toISOString()
+      };
+    }
+
+    const { data, error } = await supabaseServer
+      .from("journey_pages")
+      .update(updateData)
+      .eq("id", pageId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating journey page:", error);
+      // Fallback for mock data environment
+      const { mockJourneyPages } = await import("@/lib/supabase");
+      const mockPage = mockJourneyPages.find(p => p.client_id === clientId && p.page_type === pageType);
+      if (mockPage) {
+        const updatedPage = { 
+          ...mockPage, 
+          ...updateData,
+          id: pageId
+        };
+        return { success: true, page: updatedPage };
+      }
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, page: data };
+  } catch (error) {
+    console.error("Unexpected error updating journey page:", error);
+    return { success: false, error: "Failed to update journey page" };
+  }
+}

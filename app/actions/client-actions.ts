@@ -113,6 +113,44 @@ export async function updateClientStatus(
   }
 }
 
+export async function getClientById(
+  clientId: number,
+): Promise<{ success: boolean; error?: string; client?: Client }> {
+  try {
+    const { data, error } = await supabaseServer
+      .from("clients")
+      .select("*")
+      .eq("id", clientId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching client:", error);
+      // Fallback to mock data for development
+      const { mockClients } = await import("@/lib/supabase");
+      const mockClient = mockClients.find(c => c.id === clientId);
+      if (mockClient) {
+        return { success: true, client: mockClient };
+      }
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: "Client not found" };
+    }
+
+    return { success: true, client: data };
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    // Fallback to mock data for development
+    const { mockClients } = await import("@/lib/supabase");
+    const mockClient = mockClients.find(c => c.id === clientId);
+    if (mockClient) {
+      return { success: true, client: mockClient };
+    }
+    return { success: false, error: "Failed to fetch client" };
+  }
+}
+
 export async function deleteClient(
   clientId: number,
 ): Promise<{ success: boolean; error?: string }> {

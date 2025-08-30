@@ -100,50 +100,61 @@ return report;
 ```typescript
 // Generate prompts for each agent type
 function generateSMPrompt(epic, storyNumber, previousLearnings) {
-  return `You are Bob, the BMAD Scrum Master creating Story ${storyNumber} for ${epic.title}.
+  return `CRITICAL: Load and activate the BMAD Scrum Master agent:
 
-EPIC CONTEXT: ${epic.requirements}
-PREVIOUS STORY LEARNINGS: ${previousLearnings}
+1. Read file: .bmad-core/agents/sm.md
+2. Follow ALL activation-instructions in that file exactly
+3. Adopt the Bob persona defined in the agent file
+4. Load .bmad-core/core-config.yaml as specified
+
+CONTEXT FOR STORY ${storyNumber} CREATION:
+Epic: ${epic.title}
+Epic Requirements: ${epic.requirements}
+Previous Story Learnings: ${previousLearnings}
 
 Create the next story building on previous work. Include:
 - Components/patterns established in previous stories
 - Architecture decisions to maintain
 - Regression test requirements
 
-Use create-next-story task and story template.`;
+After proper activation, execute: *draft`;
 }
 
 function generateDevPrompt(story, architecture, serenaCapabilities) {
-  return `You are a BMAD Dev Agent implementing ${story.id}.
+  return `CRITICAL: Load and activate the BMAD Developer agent:
 
+1. Read file: .bmad-core/agents/dev.md
+2. Follow ALL activation-instructions in that file exactly
+3. Adopt the James persona defined in the agent file
+4. Load .bmad-core/core-config.yaml as specified
+
+STORY TO IMPLEMENT: ${story.id}
 STORY REQUIREMENTS: ${story.requirements}
+ARCHITECTURE CONTEXT: ${architecture}
+
 SERENA CAPABILITIES AVAILABLE:
 - mcp__serena__find_symbol: Navigate existing code
 - mcp__serena__replace_symbol_body: Modify code
 - mcp__playwright__browser_navigate: Test implementation
 
-WORKFLOW:
-1. Use find_symbol to understand existing codebase
-2. Implement following Template Genius patterns
-3. Test with Playwright MCP
-4. Commit with BMAD story reference
-5. Update story Dev Agent Record`;
+After proper activation, execute: *develop-story ${story.path}`;
 }
 
 function generateQAPrompt(implementation, story) {
-  return `You are a BMAD QA Agent reviewing ${story.id}.
+  return `CRITICAL: Load and activate the BMAD QA agent:
 
+1. Read file: .bmad-core/agents/qa.md
+2. Follow ALL activation-instructions in that file exactly
+3. Adopt the Quinn persona defined in the agent file
+4. Load .bmad-core/core-config.yaml as specified
+
+STORY TO REVIEW: ${story.id}
 IMPLEMENTATION: ${implementation.summary}
 STORY REQUIREMENTS: ${story.requirements}
 
-REVIEW PROCESS:
-1. Validate all acceptance criteria
-2. Check TypeScript compliance
-3. Test functionality with Playwright
-4. Assess regression impact
-5. Provide quality gate: PASS/CONCERNS/FAIL
+After proper activation, execute: *review ${story.path}
 
-Include specific issues and recommendations.`;
+Provide quality gate: PASS/CONCERNS/FAIL with detailed findings.`;
 }
 ```
 

@@ -340,7 +340,7 @@ export default function ClientList({ initialClients }: ClientListProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
-                      window.open(`/dashboard/client/${client.id}/journey/activation`, "_blank")
+                      window.open(`/dashboard/journey/${client.id}`, "_blank")
                     }
                   >
                     <Route className="w-4 h-4 mr-2" />

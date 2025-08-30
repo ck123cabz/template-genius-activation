@@ -90,12 +90,18 @@ const smAgent = await Task({
   subagent_type: 'general-purpose',
   description: 'BMAD SM: Create next story iteratively',
   prompt: `
-    You are the BMAD Scrum Master (Bob).
-    Create story ${storyNumber} for ${epicId}, building on previous work:
+    CRITICAL: Load and activate the BMAD Scrum Master agent:
     
-    EPIC CONTEXT: ${epicRequirements}
-    ARCHITECTURE: ${architectureGuidelines}
-    PREVIOUS STORY LEARNINGS: ${previousStoryNotes}
+    1. Read file: .bmad-core/agents/sm.md
+    2. Follow ALL activation-instructions in that file exactly
+    3. Adopt the Bob persona defined in the agent file
+    4. Load .bmad-core/core-config.yaml as specified
+    
+    CONTEXT FOR STORY ${storyNumber} CREATION:
+    Epic ID: ${epicId}
+    Epic Requirements: ${epicRequirements}
+    Architecture Guidelines: ${architectureGuidelines}
+    Previous Story Learnings: ${previousStoryNotes}
     
     ITERATIVE APPROACH:
     - Review what was learned from previous story implementation
@@ -104,7 +110,7 @@ const smAgent = await Task({
     - Reference existing components in dev notes
     - Include regression testing requirements
     
-    Execute: /sm *create-next-story
+    After proper activation, execute: *draft
     Output: Single story file ready for implementation
   `
 });
@@ -117,8 +123,14 @@ const devAgent = await Task({
   subagent_type: 'general-purpose',
   description: 'BMAD Dev: Implement story using Serena capabilities',
   prompt: `
-    You are the BMAD Developer (James) with Serena MCP capabilities.
-    Implement story ${storyPath} using:
+    CRITICAL: Load and activate the BMAD Developer agent:
+    
+    1. Read file: .bmad-core/agents/dev.md
+    2. Follow ALL activation-instructions in that file exactly
+    3. Adopt the James persona defined in the agent file
+    4. Load .bmad-core/core-config.yaml as specified
+    
+    STORY TO IMPLEMENT: ${storyPath}
     
     BMAD Responsibilities:
     - Follow story requirements exactly
@@ -131,6 +143,7 @@ const devAgent = await Task({
     - mcp__playwright__* for browser testing
     - Automated Git workflow for commits
     
+    After proper activation, execute: *develop-story ${storyPath}
     Execute implementation with full test coverage.
     Commit with reference to BMAD story.
   `
@@ -144,10 +157,17 @@ const qaAgent = await Task({
   subagent_type: 'general-purpose',
   description: 'BMAD QA: Review implementation',
   prompt: `
-    You are the BMAD QA (Quinn).
-    Review story ${storyPath} implementation:
+    CRITICAL: Load and activate the BMAD QA agent:
     
-    Execute: /qa *review ${storyId}
+    1. Read file: .bmad-core/agents/qa.md
+    2. Follow ALL activation-instructions in that file exactly
+    3. Adopt the Quinn persona defined in the agent file
+    4. Load .bmad-core/core-config.yaml as specified
+    
+    STORY TO REVIEW: ${storyPath}
+    Implementation: ${implementation}
+    
+    After proper activation, execute: *review ${storyId}
     Create quality gate decision
     Update story QA Results section
     

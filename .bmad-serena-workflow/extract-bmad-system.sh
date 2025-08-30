@@ -31,11 +31,11 @@ mkdir -p "${OUTPUT_DIR}/examples"
 # Extract BMAD Core
 echo ""
 echo "📦 Extracting BMAD core system..."
-if [ -d ".bmad-core" ]; then
-    cp -r .bmad-core "${OUTPUT_DIR}/templates/"
+if [ -d ".bmad-serena-workflow/bmad-core" ]; then
+    cp -r .bmad-serena-workflow/bmad-core "${OUTPUT_DIR}/templates/.bmad-core"
     echo -e "${GREEN}✓${NC} BMAD core extracted"
 else
-    echo -e "${RED}✗${NC} .bmad-core not found"
+    echo -e "${RED}✗${NC} .bmad-serena-workflow/bmad-core not found"
     exit 1
 fi
 

@@ -27,8 +27,7 @@ The Template Genius Activation Platform is a Next.js 15-based client activation 
 
 ## Enhancement Scope Definition
 
-**Enhancement Type:** Revenue Intelligence Engine implementation with connected client journey learning
-
+**Enhancement Type:**
 ✅ **New Feature Addition** - Connected journey intelligence system  
 ✅ **Integration with New Systems** - Full Supabase + Stripe integration  
 ✅ **Learning Capture System** - Hypothesis and outcome tracking  
@@ -40,5 +39,25 @@ Transform the platform into a Revenue Intelligence Engine that captures learning
 ✅ **Minimal Code Impact** - Enhance existing components rather than replacing
 ✅ **High Business Impact** - Enables immediate revenue validation and learning
 ✅ **BMAD Acceleration** - 1-2 day implementation vs 3 weeks manual
+
+## Goals and Background Context
+
+**Goals:**
+- Enable systematic learning from every client interaction to understand conversion drivers
+- Implement $500 activation fee collection with intelligent tracking
+- Transform 4.5% conversion rate to 30%+ through data-driven optimization
+- Capture revenue intelligence that persists across development sessions
+- Provide pattern recognition that guides future client strategies
+
+**Background Context:**
+Current business faces critical revenue challenge with $73,250 in signed contracts yielding $0 invoiced due to clients ghosting after free work. The core problem is lack of systematic learning - no way to understand what makes clients pay versus ghost, leading to repeated failures without improvement. This enhancement adds Revenue Intelligence Engine capabilities to the existing platform, enabling hypothesis-driven content optimization and outcome tracking across the complete 4-page client journey.
+
+**Change Log:**
+
+| Date | Version | Description | Author |
+|------|---------|-------------|---------|
+| Aug 28, 2025 | 1.0 | Initial PRD creation | Admin |
+| Aug 29, 2025 | 2.0 | Complete revenue intelligence redesign | Admin |
+| Aug 30, 2025 | 2.1 | Brownfield template restructure | PM John |
 
 ---

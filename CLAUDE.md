@@ -7,10 +7,10 @@
 
 ## ⚡ Essential Commands  
 ```bash
-pnpm dev          # Development server (port 3000)
+docker-compose up # Development server (port 3000)
 pnpm build        # Production build  
 pnpm lint         # Code quality
-docker-compose up # Docker development
+pnpm dev          # Alternative: Direct development
 ```
 
 ## 🧠 Knowledge Recovery System
@@ -57,7 +57,7 @@ docs/CONTEXT-RECOVERY-GUIDE.md    # Detailed recovery workflow
 # Start session
 git checkout develop && git pull origin develop
 git checkout -b feature/task-name
-pnpm dev
+docker-compose up
 
 # During development  
 # Component-level commits with:
