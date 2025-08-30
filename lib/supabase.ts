@@ -49,6 +49,29 @@ export interface JourneyProgress {
   current_step: number;
 }
 
+// Content hypothesis types and status enums  
+export type ContentChangeType = 'content' | 'title' | 'both' | 'structure';
+export type ContentHypothesisStatus = 'active' | 'validated' | 'invalidated' | 'pending';
+
+// Content hypothesis interface for Story 2.1
+export interface ContentHypothesis {
+  id: number;
+  journey_page_id: number;
+  hypothesis: string;
+  change_type: ContentChangeType;
+  predicted_outcome?: string;
+  confidence_level?: number; // 1-10 scale
+  previous_content?: string;
+  new_content?: string;
+  created_at: string;
+  created_by?: string; // Admin user identifier
+  status: ContentHypothesisStatus;
+  outcome_recorded_at?: string;
+  actual_outcome?: string;
+  conversion_impact: Record<string, any>;
+  metadata: Record<string, any>;
+}
+
 export interface ActivationContent {
   id: number;
   title: string;

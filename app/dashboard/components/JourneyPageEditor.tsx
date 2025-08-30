@@ -22,8 +22,10 @@ import {
 } from "lucide-react";
 import { Client, JourneyPage } from "@/lib/supabase";
 import { updateJourneyPageContent, updateJourneyPageHypothesis } from "@/app/actions/journey-actions";
+import { updateJourneyPageContentWithHypothesis } from "@/app/actions/hypothesis-actions";
 import { JourneyNavigation } from "./JourneyNavigation";
 import { PageConsistencyChecker } from "./PageConsistencyChecker";
+import { HypothesisModal } from "@/components/ui/HypothesisModal";
 
 interface JourneyPageEditorProps {
   client: Client;
@@ -48,6 +50,11 @@ export function JourneyPageEditor({
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // Story 2.1: Hypothesis Modal state
+  const [showHypothesisModal, setShowHypothesisModal] = useState(false);
+  const [currentHypothesisId, setCurrentHypothesisId] = useState<number | null>(null);
+  const [editingMode, setEditingMode] = useState(false);
 
   // Track changes
   const markAsChanged = () => {
@@ -57,12 +64,25 @@ export function JourneyPageEditor({
     }
   };
 
+  // Story 2.1: Enhanced handlers with hypothesis capture
   const handleTitleChange = (value: string) => {
+    if (!editingMode && !hasChanges) {
+      // First edit attempt - show hypothesis modal
+      setShowHypothesisModal(true);
+      return;
+    }
+    
     setTitle(value);
     markAsChanged();
   };
 
   const handleContentChange = (value: string) => {
+    if (!editingMode && !hasChanges) {
+      // First edit attempt - show hypothesis modal
+      setShowHypothesisModal(true);
+      return;
+    }
+    
     setContent(value);
     markAsChanged();
   };
@@ -72,7 +92,24 @@ export function JourneyPageEditor({
     markAsChanged();
   };
 
-  // Save changes
+  // Story 2.1: Hypothesis modal handlers
+  const handleHypothesisSuccess = (hypothesisId: number) => {
+    setCurrentHypothesisId(hypothesisId);
+    setEditingMode(true);
+    setShowHypothesisModal(false);
+  };
+
+  const handleHypothesisClose = () => {
+    setShowHypothesisModal(false);
+  };
+
+  const handleStartEditing = () => {
+    if (!editingMode && !hasChanges) {
+      setShowHypothesisModal(true);
+    }
+  };
+
+  // Save changes with enhanced hypothesis tracking
   const handleSave = async () => {
     if (!hasChanges) return;
 
@@ -80,24 +117,46 @@ export function JourneyPageEditor({
     setErrorMessage("");
 
     try {
-      // Update content
-      const result = await updateJourneyPageContent(
-        currentPage.id,
-        title,
-        content,
-        hypothesis
-      );
+      // Story 2.1: Use enhanced save with hypothesis tracking
+      if (currentHypothesisId) {
+        const result = await updateJourneyPageContentWithHypothesis(
+          currentPage.id,
+          title,
+          content,
+          currentHypothesisId,
+          hypothesis
+        );
 
-      if (result.success) {
-        setSaveStatus('saved');
-        setHasChanges(false);
-        // Auto-clear success status after 3 seconds
-        setTimeout(() => {
-          setSaveStatus('idle');
-        }, 3000);
+        if (result.success) {
+          setSaveStatus('saved');
+          setHasChanges(false);
+          // Auto-clear success status after 3 seconds
+          setTimeout(() => {
+            setSaveStatus('idle');
+          }, 3000);
+        } else {
+          setSaveStatus('error');
+          setErrorMessage(result.error || "Failed to save changes");
+        }
       } else {
-        setSaveStatus('error');
-        setErrorMessage(result.error || "Failed to save changes");
+        // Fallback to original save method for backward compatibility
+        const result = await updateJourneyPageContent(
+          currentPage.id,
+          title,
+          content,
+          hypothesis
+        );
+
+        if (result.success) {
+          setSaveStatus('saved');
+          setHasChanges(false);
+          setTimeout(() => {
+            setSaveStatus('idle');
+          }, 3000);
+        } else {
+          setSaveStatus('error');
+          setErrorMessage(result.error || "Failed to save changes");
+        }
       }
     } catch (error) {
       setSaveStatus('error');
@@ -326,6 +385,17 @@ export function JourneyPageEditor({
           </Card>
         </div>
       </div>
+      
+      {/* Story 2.1: Hypothesis Modal */}
+      <HypothesisModal
+        isOpen={showHypothesisModal}
+        onClose={handleHypothesisClose}
+        onSuccess={handleHypothesisSuccess}
+        journeyPageId={currentPage.id}
+        currentTitle={currentPage.title}
+        currentContent={currentPage.content || ""}
+        pageType={currentPage.page_type}
+      />
     </div>
   );
 }
