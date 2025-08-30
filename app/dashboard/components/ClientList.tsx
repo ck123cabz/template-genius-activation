@@ -39,6 +39,8 @@ import {
 import { getClientJourneyProgress } from "@/app/actions/journey-actions";
 import { useFormState } from "react-dom";
 import { JourneyProgressCompact, JourneyStatusBadge } from "./JourneyProgress";
+import { OutcomeStatusBadge } from "./OutcomeStatusBadge";
+import { OutcomeControls } from "./OutcomeControls";
 
 interface ClientListProps {
   initialClients: Client[];
@@ -48,6 +50,7 @@ export default function ClientList({ initialClients }: ClientListProps) {
   const [clients] = useState(initialClients);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [outcomeFilter, setOutcomeFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [journeyProgressMap, setJourneyProgressMap] = useState<Map<number, JourneyProgress>>(new Map());
@@ -108,7 +111,10 @@ export default function ClientList({ initialClients }: ClientListProps) {
     const matchesStatus =
       statusFilter === "all" || client.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesOutcome =
+      outcomeFilter === "all" || (client.journey_outcome || 'pending') === outcomeFilter;
+
+    return matchesSearch && matchesStatus && matchesOutcome;
   });
 
   const handleStatusUpdate = (
@@ -135,10 +141,20 @@ export default function ClientList({ initialClients }: ClientListProps) {
     total: clients.length,
     activated: clients.filter((c) => c.status === "activated").length,
     pending: clients.filter((c) => c.status === "pending").length,
+    paid: clients.filter((c) => c.journey_outcome === "paid").length,
+    ghosted: clients.filter((c) => c.journey_outcome === "ghosted").length,
     conversionRate:
       clients.length > 0
         ? Math.round(
             (clients.filter((c) => c.status === "activated").length /
+              clients.length) *
+              100,
+          )
+        : 0,
+    paidRate:
+      clients.length > 0
+        ? Math.round(
+            (clients.filter((c) => c.journey_outcome === "paid").length /
               clients.length) *
               100,
           )
@@ -148,7 +164,7 @@ export default function ClientList({ initialClients }: ClientListProps) {
   return (
     <>
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
@@ -182,13 +198,31 @@ export default function ClientList({ initialClients }: ClientListProps) {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Conversion Rate
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Paid</CardTitle>
+            <div className="h-4 w-4 rounded-full bg-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.paid}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
             <div className="text-sm text-muted-foreground">%</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.conversionRate}%</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Revenue Rate</CardTitle>
+            <div className="text-sm text-muted-foreground">%</div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.paidRate}%</div>
           </CardContent>
         </Card>
       </div>
@@ -204,13 +238,13 @@ export default function ClientList({ initialClients }: ClientListProps) {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant={statusFilter === "all" ? "default" : "outline"}
             onClick={() => setStatusFilter("all")}
             size="sm"
           >
-            All
+            All Status
           </Button>
           <Button
             variant={statusFilter === "pending" ? "default" : "outline"}
@@ -225,6 +259,29 @@ export default function ClientList({ initialClients }: ClientListProps) {
             size="sm"
           >
             Activated
+          </Button>
+          <Button
+            variant={outcomeFilter === "all" ? "default" : "outline"}
+            onClick={() => setOutcomeFilter("all")}
+            size="sm"
+          >
+            All Outcomes
+          </Button>
+          <Button
+            variant={outcomeFilter === "paid" ? "default" : "outline"}
+            onClick={() => setOutcomeFilter("paid")}
+            size="sm"
+            className="text-green-700"
+          >
+            Paid
+          </Button>
+          <Button
+            variant={outcomeFilter === "ghosted" ? "default" : "outline"}
+            onClick={() => setOutcomeFilter("ghosted")}
+            size="sm"
+            className="text-gray-700"
+          >
+            Ghosted
           </Button>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -396,6 +453,24 @@ export default function ClientList({ initialClients }: ClientListProps) {
                     {client.hypothesis}
                   </p>
                 </div>
+                
+                {/* Journey Outcome Section - New */}
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium">Journey Outcome</p>
+                    <OutcomeStatusBadge 
+                      outcome={(client.journey_outcome || 'pending') as any}
+                      revenue={client.revenue_amount}
+                      size="sm"
+                    />
+                  </div>
+                  <OutcomeControls 
+                    client={client}
+                    variant="compact"
+                    className="w-full"
+                  />
+                </div>
+                
                 {/* Journey Progress Section */}
                 {journeyProgressMap.has(client.id) && (
                   <div className="border-t pt-2 mt-2">
