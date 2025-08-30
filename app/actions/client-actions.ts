@@ -134,3 +134,66 @@ export async function deleteClient(
     return { success: false, error: "Failed to delete client" };
   }
 }
+
+interface OutcomeData {
+  outcome: "paid" | "ghosted" | "pending";
+  notes?: string;
+  revenue?: number | null;
+  recorded_at: string;
+}
+
+export async function recordClientOutcome(
+  clientId: number,
+  outcomeData: OutcomeData,
+): Promise<{ success: boolean; error?: string; client?: Client }> {
+  try {
+    // Validate required fields
+    if (!outcomeData.outcome) {
+      return { success: false, error: "Outcome is required" };
+    }
+
+    if (!["paid", "ghosted", "pending"].includes(outcomeData.outcome)) {
+      return { success: false, error: "Invalid outcome value" };
+    }
+
+    // Update client journey outcome
+    const { data: client, error: clientError } = await supabaseServer
+      .from("clients")
+      .update({
+        journey_outcome: outcomeData.outcome,
+        outcome_recorded_at: outcomeData.recorded_at,
+      })
+      .eq("id", clientId)
+      .select()
+      .single();
+
+    if (clientError) {
+      console.error("Error updating client outcome:", clientError);
+      return { success: false, error: clientError.message };
+    }
+
+    // Insert detailed outcome record for pattern recognition
+    const { error: outcomeError } = await supabaseServer
+      .from("journey_outcomes")
+      .insert({
+        client_id: clientId,
+        outcome: outcomeData.outcome,
+        notes: outcomeData.notes?.trim() || null,
+        revenue: outcomeData.revenue,
+        recorded_at: outcomeData.recorded_at,
+        created_at: new Date().toISOString(),
+      });
+
+    if (outcomeError) {
+      console.error("Error inserting journey outcome:", outcomeError);
+      // Continue anyway as the client update succeeded
+      console.warn("Client outcome updated but detailed record failed to save");
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, client };
+  } catch (error) {
+    console.error("Unexpected error recording client outcome:", error);
+    return { success: false, error: "Failed to record client outcome" };
+  }
+}

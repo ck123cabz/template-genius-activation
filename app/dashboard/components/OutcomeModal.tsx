@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useFormState } from "react-dom";
+import { useState, useTransition, useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,7 +54,7 @@ export function OutcomeModal({ client, isOpen, onClose }: OutcomeModalProps) {
     (client.journey_outcome || 'pending') as JourneyOutcome
   );
   const [isPending, startTransition] = useTransition();
-  const [state, formAction] = useFormState(recordJourneyOutcome, initialState);
+  const [state, formAction] = useActionState(recordJourneyOutcome, initialState);
   const { toast } = useToast();
 
   // Calculate journey stats
