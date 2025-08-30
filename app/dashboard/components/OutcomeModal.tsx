@@ -107,11 +107,12 @@ export function OutcomeModal({ client, isOpen, onClose }: OutcomeModalProps) {
 
         <form action={handleSubmit} className="space-y-6">
           <Tabs defaultValue="outcome" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="outcome">Outcome</TabsTrigger>
               <TabsTrigger value="analysis">Analysis</TabsTrigger>
               <TabsTrigger value="correlation">Correlation</TabsTrigger>
               <TabsTrigger value="learning">Learning</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
 
             {/* Client Context Card */}
@@ -390,6 +391,193 @@ export function OutcomeModal({ client, isOpen, onClose }: OutcomeModalProps) {
                     rows={3}
                     disabled={isPending}
                   />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="notes" className="space-y-4">
+              <div className="space-y-4">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold flex items-center space-x-2 mb-2">
+                    <Lightbulb className="w-5 h-5 text-amber-500" />
+                    <span>Detailed Outcome Notes</span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Capture comprehensive details about what actually happened during this client's journey. 
+                    This rich documentation enables deep learning and pattern recognition.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Timeline of Events */}
+                  <div>
+                    <Label htmlFor="timeline_notes" className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4" />
+                      <span>Timeline of Key Events</span>
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Document the chronological sequence of important interactions and decisions
+                    </p>
+                    <Textarea
+                      id="timeline_notes"
+                      name="timeline_notes"
+                      placeholder="Day 1: Initial contact, client seemed interested in senior-level candidates...
+Day 3: Presented 3 candidates, client focused on technical skills over culture fit...
+Day 7: Client requested salary negotiations, mentioned budget constraints...
+Day 14: Final decision made, chose candidate with lowest salary requirement..."
+                      rows={6}
+                      disabled={isPending}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+
+                  {/* Client Behavior Observations */}
+                  <div>
+                    <Label htmlFor="behavior_observations" className="flex items-center space-x-2">
+                      <User className="w-4 h-4" />
+                      <span>Client Behavior & Communication Patterns</span>
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Note communication style, response patterns, decision-making approach
+                    </p>
+                    <Textarea
+                      id="behavior_observations"
+                      name="behavior_observations"
+                      placeholder="Communication style: Direct, prefers email over calls
+Response time: Usually responds within 24 hours
+Decision-making: Highly analytical, requests detailed comparisons
+Pain points: Mentioned struggling with previous recruiting experiences
+Priorities: Cost-conscious, values proven track record over innovation..."
+                      rows={5}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  {/* Revenue Intelligence */}
+                  <div>
+                    <Label htmlFor="revenue_intelligence" className="flex items-center space-x-2">
+                      <DollarSign className="w-4 h-4" />
+                      <span>Revenue Intelligence & Conversion Insights</span>
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Detailed analysis of what drove (or prevented) revenue conversion
+                    </p>
+                    <Textarea
+                      id="revenue_intelligence"
+                      name="revenue_intelligence"
+                      placeholder="Conversion drivers:
+- Client had previous bad experience with competitors (mentioned 3 failed hires)
+- Our candidate pipeline matched their technical requirements exactly
+- Pricing was competitive but not the lowest (premium justified by quality)
+
+Revenue blockers identified:
+- Initial hesitation due to budget approval process (CFO involvement required)
+- Competitor offered 15% lower fee structure
+- Client needed 2 weeks longer timeline than initially projected
+
+Key revenue lessons:
+- Earlier budget qualification could have streamlined process
+- Emphasizing quality over price resonated more than expected
+- Follow-up frequency was optimal (every 3 days)"
+                      rows={6}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  {/* Competitive Analysis */}
+                  <div>
+                    <Label htmlFor="competitive_notes" className="flex items-center space-x-2">
+                      <Target className="w-4 h-4" />
+                      <span>Competitive Landscape & Differentiation</span>
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Document competitive dynamics and how we differentiated
+                    </p>
+                    <Textarea
+                      id="competitive_notes"
+                      name="competitive_notes"
+                      placeholder="Competitors involved: [Company A], [Company B]
+Their positioning: Lower cost, faster turnaround
+Our differentiation: 
+- Higher quality candidate vetting process
+- Industry-specific expertise in their sector
+- Proven track record with similar companies
+
+Client's evaluation criteria:
+1. Quality of candidates (weighted 40%)
+2. Price (weighted 30%)
+3. Timeline (weighted 20%)
+4. Relationship/trust (weighted 10%)
+
+Competitive outcome: Won based on candidate quality despite 10% higher pricing"
+                      rows={5}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  {/* Lessons & Action Items */}
+                  <div>
+                    <Label htmlFor="actionable_insights" className="flex items-center space-x-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>Actionable Insights & Future Improvements</span>
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Specific, actionable lessons for similar future engagements
+                    </p>
+                    <Textarea
+                      id="actionable_insights"
+                      name="actionable_insights"
+                      placeholder="Process improvements for next time:
+□ Implement budget qualification checklist in discovery phase
+□ Create competitor comparison template for this industry vertical
+□ Develop pricing justification framework for premium positioning
+□ Add CFO stakeholder identification to intake process
+
+Content/messaging updates needed:
+□ Develop case studies for similar company size/industry
+□ Create quality differentiation materials
+□ Build cost-of-bad-hire calculator for budget conversations
+
+System/tool enhancements:
+□ Add competitive intelligence tracking to CRM
+□ Create timeline expectation-setting templates
+□ Implement follow-up cadence recommendations by client type"
+                      rows={6}
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  {/* Tags and Categories */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="outcome_tags">Outcome Tags</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Add searchable tags for pattern recognition
+                      </p>
+                      <Input
+                        id="outcome_tags"
+                        name="outcome_tags"
+                        placeholder="budget-conscious, technical-focus, slow-decision, quality-driven"
+                        disabled={isPending}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="learning_priority">Learning Priority</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        How important is this case for future learning?
+                      </p>
+                      <Select name="learning_priority" disabled={isPending}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">High - Critical insights for strategy</SelectItem>
+                          <SelectItem value="medium">Medium - Useful patterns identified</SelectItem>
+                          <SelectItem value="low">Low - Standard engagement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </TabsContent>

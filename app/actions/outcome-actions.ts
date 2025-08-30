@@ -52,6 +52,15 @@ export async function recordJourneyOutcome(
     const confidenceStr = formData.get("confidence_in_analysis") as string;
     const hypothesisAccuracy = formData.get("hypothesis_accuracy") as string;
 
+    // Story 2.3: Extract new detailed notes fields
+    const timelineNotes = formData.get("timeline_notes") as string;
+    const behaviorObservations = formData.get("behavior_observations") as string;
+    const revenueIntelligence = formData.get("revenue_intelligence") as string;
+    const competitiveNotes = formData.get("competitive_notes") as string;
+    const actionableInsights = formData.get("actionable_insights") as string;
+    const outcomeTags = formData.get("outcome_tags") as string;
+    const learningPriority = formData.get("learning_priority") as string;
+
     // Validate required fields
     if (!clientId || !journeyOutcome) {
       return { success: false, error: "Client ID and outcome are required" };
@@ -77,7 +86,7 @@ export async function recordJourneyOutcome(
       (Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    // Prepare outcome data
+    // Prepare outcome data with Story 2.3 enhancements
     const outcomeData = {
       client_id: clientId,
       journey_outcome: journeyOutcome,
@@ -91,9 +100,22 @@ export async function recordJourneyOutcome(
       missed_opportunities: missedOpportunities || null,
       next_time_improvements: nextTimeImprovements || null,
       confidence_in_analysis: confidence,
+      
+      // Story 2.3: Rich notes fields for deep learning
+      timeline_notes: timelineNotes || null,
+      behavior_observations: behaviorObservations || null,
+      revenue_intelligence: revenueIntelligence || null,
+      competitive_notes: competitiveNotes || null,
+      actionable_insights: actionableInsights || null,
+      outcome_tags: outcomeTags || null,
+      learning_priority: learningPriority || 'medium',
+      
       metadata: {
         recorded_from: "dashboard",
         client_status_at_recording: client.status,
+        notes_version: "2.3", // Track Story 2.3 implementation
+        has_detailed_notes: !!(timelineNotes || behaviorObservations || revenueIntelligence || competitiveNotes || actionableInsights),
+        tags_array: outcomeTags ? outcomeTags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
       },
     };
 

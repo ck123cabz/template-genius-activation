@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { supabase, clientService, contentService, AgreementContent, ConfirmationContent } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Users, FileText, BarChart3 } from "lucide-react";
+import { Users, FileText, BarChart3, Search } from "lucide-react";
 import ClientList from "@/app/dashboard/components/ClientList";
 import LearningAnalytics from "@/app/dashboard/components/LearningAnalytics";
+import { NotesSearchPanel } from "@/app/dashboard/components/NotesSearchPanel";
 
 const defaultContent = {
   activation: {
@@ -153,7 +154,7 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <Tabs defaultValue="clients" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Client Management
@@ -165,6 +166,10 @@ export default function DashboardPage() {
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Learning Analytics
+            </TabsTrigger>
+            <TabsTrigger value="notes-search" className="flex items-center gap-2">
+              <Search className="w-4 h-4" />
+              Notes Search
             </TabsTrigger>
           </TabsList>
 
@@ -195,6 +200,10 @@ export default function DashboardPage() {
 
           <TabsContent value="analytics" className="space-y-6">
             <LearningAnalytics />
+          </TabsContent>
+
+          <TabsContent value="notes-search" className="space-y-6">
+            <NotesSearchPanel />
           </TabsContent>
         </Tabs>
       </div>
