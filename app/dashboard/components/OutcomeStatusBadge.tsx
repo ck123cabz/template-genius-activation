@@ -5,7 +5,9 @@ import {
   Clock, 
   MessageSquare, 
   X,
-  AlertCircle 
+  AlertCircle,
+  Zap,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +16,10 @@ type JourneyOutcome = 'paid' | 'ghosted' | 'pending' | 'negotiating' | 'declined
 interface OutcomeStatusBadgeProps {
   outcome: JourneyOutcome;
   revenue?: number;
+  recordedBy?: string;
   className?: string;
   showIcon?: boolean;
+  showSource?: boolean; // Whether to show automatic/manual indicator
   size?: 'sm' | 'default' | 'lg';
 }
 
@@ -55,12 +59,18 @@ const outcomeConfig = {
 export function OutcomeStatusBadge({
   outcome,
   revenue,
+  recordedBy,
   className,
   showIcon = true,
+  showSource = false,
   size = "default",
 }: OutcomeStatusBadgeProps) {
   const config = outcomeConfig[outcome] || outcomeConfig.pending;
   const Icon = config.icon;
+  
+  // Determine if outcome was automatically recorded
+  const isAutomatic = recordedBy === 'stripe_webhook';
+  const SourceIcon = isAutomatic ? Zap : User;
   
   const sizeClasses = {
     sm: "text-xs px-2 py-0.5",
@@ -69,28 +79,45 @@ export function OutcomeStatusBadge({
   };
 
   return (
-    <Badge
-      variant={config.variant}
-      className={cn(
-        config.className,
-        sizeClasses[size],
-        "font-medium transition-colors",
-        className
+    <div className="flex items-center space-x-2">
+      <Badge
+        variant={config.variant}
+        className={cn(
+          config.className,
+          sizeClasses[size],
+          "font-medium transition-colors",
+          className
+        )}
+      >
+        {showIcon && (
+          <Icon className={cn(
+            "mr-1",
+            size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4"
+          )} />
+        )}
+        {config.label}
+        {outcome === "paid" && revenue && (
+          <span className="ml-1 font-semibold">
+            ${revenue.toLocaleString()}
+          </span>
+        )}
+      </Badge>
+      
+      {showSource && recordedBy && (
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-xs px-1.5 py-0.5",
+            isAutomatic 
+              ? "bg-blue-50 text-blue-700 border-blue-200" 
+              : "bg-gray-50 text-gray-600 border-gray-200"
+          )}
+        >
+          <SourceIcon className="w-3 h-3 mr-1" />
+          {isAutomatic ? "Auto" : "Manual"}
+        </Badge>
       )}
-    >
-      {showIcon && (
-        <Icon className={cn(
-          "mr-1",
-          size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4"
-        )} />
-      )}
-      {config.label}
-      {outcome === "paid" && revenue && (
-        <span className="ml-1 font-semibold">
-          ${revenue.toLocaleString()}
-        </span>
-      )}
-    </Badge>
+    </div>
   );
 }
 
@@ -98,7 +125,9 @@ interface OutcomeStatusIndicatorProps {
   outcome: JourneyOutcome;
   revenue?: number;
   recordedAt?: string;
+  recordedBy?: string;
   className?: string;
+  showSource?: boolean;
 }
 
 export function OutcomeStatusIndicator({

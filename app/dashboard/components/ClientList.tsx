@@ -37,7 +37,7 @@ import {
   deleteClient,
 } from "@/app/actions/client-actions";
 import { getClientJourneyProgress } from "@/app/actions/journey-actions";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { JourneyProgressCompact, JourneyStatusBadge } from "./JourneyProgress";
 import { OutcomeStatusBadge } from "./OutcomeStatusBadge";
 import { OutcomeControls } from "./OutcomeControls";
@@ -55,7 +55,7 @@ export default function ClientList({ initialClients }: ClientListProps) {
   const [isPending, startTransition] = useTransition();
   const [journeyProgressMap, setJourneyProgressMap] = useState<Map<number, JourneyProgress>>(new Map());
 
-  const [createState, createAction] = useFormState(
+  const [createState, createAction] = useActionState(
     async (prevState: any, formData: FormData) => {
       const result = await createClient(formData);
       if (result.success) {
