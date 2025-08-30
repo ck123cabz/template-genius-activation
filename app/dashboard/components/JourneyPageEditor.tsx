@@ -26,6 +26,7 @@ import { updateJourneyPageContentWithHypothesis } from "@/app/actions/hypothesis
 import { JourneyNavigation } from "./JourneyNavigation";
 import { PageConsistencyChecker } from "./PageConsistencyChecker";
 import { HypothesisModal } from "@/components/ui/HypothesisModal";
+import { HypothesisHistory } from "@/components/ui/HypothesisHistory";
 
 interface JourneyPageEditorProps {
   client: Client;
@@ -64,10 +65,10 @@ export function JourneyPageEditor({
     }
   };
 
-  // Story 2.1: Enhanced handlers with hypothesis capture
+  // Story 2.1: Enhanced handlers with mandatory hypothesis capture (AC 2.1.1)
   const handleTitleChange = (value: string) => {
     if (!editingMode && !hasChanges) {
-      // First edit attempt - show hypothesis modal
+      // First edit attempt - mandatory hypothesis modal
       setShowHypothesisModal(true);
       return;
     }
@@ -78,13 +79,20 @@ export function JourneyPageEditor({
 
   const handleContentChange = (value: string) => {
     if (!editingMode && !hasChanges) {
-      // First edit attempt - show hypothesis modal
+      // First edit attempt - mandatory hypothesis modal
       setShowHypothesisModal(true);
       return;
     }
     
     setContent(value);
     markAsChanged();
+  };
+
+  // Prevent any content editing without hypothesis (AC 2.1.1)
+  const handleFieldFocus = () => {
+    if (!editingMode && !hasChanges) {
+      setShowHypothesisModal(true);
+    }
   };
 
   const handleHypothesisChange = (value: string) => {
@@ -229,6 +237,16 @@ export function JourneyPageEditor({
         </div>
         
         <div className="flex items-center gap-2">
+          {!editingMode && (
+            <Button
+              variant="outline"
+              onClick={() => setShowHypothesisModal(true)}
+              className="bg-orange-100 border-orange-300 text-orange-700 hover:bg-orange-200"
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Capture Hypothesis
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={handlePreview}
@@ -239,7 +257,9 @@ export function JourneyPageEditor({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!hasChanges || isPending || saveStatus === 'saving'}
+            disabled={!hasChanges || isPending || saveStatus === 'saving' || !editingMode}
+            className={editingMode ? "" : "opacity-50 cursor-not-allowed"}
+            title={!editingMode ? "Must capture hypothesis before saving changes" : ""}
           >
             <Save className="h-4 w-4 mr-2" />
             {saveStatus === 'saving' ? 'Saving...' : 'Save Changes'}
@@ -275,9 +295,21 @@ export function JourneyPageEditor({
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
                 Page Content
+                {!editingMode && (
+                  <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                    Hypothesis Required
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
-                Edit the title and content that will be displayed to clients
+                {!editingMode ? (
+                  <span className="text-orange-700">
+                    <strong>Story 2.1:</strong> You must capture your hypothesis before making content changes. 
+                    This builds conversion intelligence from every edit.
+                  </span>
+                ) : (
+                  "Edit the title and content that will be displayed to clients"
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -287,8 +319,10 @@ export function JourneyPageEditor({
                   id="title"
                   value={title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  placeholder="Enter page title"
-                  className="font-medium"
+                  onFocus={handleFieldFocus}
+                  placeholder={editingMode ? "Enter page title" : "Click to start editing (hypothesis required)"}
+                  className={`font-medium ${!editingMode ? 'cursor-pointer bg-orange-50 border-orange-200 hover:bg-orange-100' : ''}`}
+                  readOnly={!editingMode}
                 />
               </div>
               
@@ -298,39 +332,62 @@ export function JourneyPageEditor({
                   id="content"
                   value={content}
                   onChange={(e) => handleContentChange(e.target.value)}
-                  placeholder="Enter page content (supports HTML)"
+                  onFocus={handleFieldFocus}
+                  placeholder={editingMode ? "Enter page content (supports HTML)" : "Click to start editing (hypothesis required)"}
                   rows={12}
-                  className="font-mono text-sm"
+                  className={`font-mono text-sm ${!editingMode ? 'cursor-pointer bg-orange-50 border-orange-200 hover:bg-orange-100' : ''}`}
+                  readOnly={!editingMode}
                 />
                 <p className="text-xs text-muted-foreground">
-                  HTML tags are supported. Use semantic markup for best results.
+                  {editingMode ? (
+                    "HTML tags are supported. Use semantic markup for best results."
+                  ) : (
+                    "🔒 Editing locked until hypothesis is captured. This ensures we learn from every change."
+                  )}
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Hypothesis Capture */}
-          <Card className="border-orange-200 bg-orange-50">
+          {/* Hypothesis Capture - Story 2.1 Enhanced */}
+          <Card className={`${editingMode ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-900">
+              <CardTitle className={`flex items-center gap-2 ${editingMode ? 'text-green-900' : 'text-orange-900'}`}>
                 <Edit3 className="h-5 w-5" />
-                Edit Hypothesis
+                {editingMode ? 'Active Hypothesis' : 'Hypothesis Required'}
+                {editingMode && (
+                  <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
+                    Editing Enabled
+                  </Badge>
+                )}
               </CardTitle>
-              <CardDescription className="text-orange-700">
-                Document why you're making these changes (following Story 1.1 pattern)
+              <CardDescription className={editingMode ? 'text-green-700' : 'text-orange-700'}>
+                {editingMode ? (
+                  "Current hypothesis guiding your edits. Update as needed to reflect your reasoning."
+                ) : (
+                  "⚠️ You must capture your hypothesis before making content changes. Click any field above to start."
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={hypothesis}
                 onChange={(e) => handleHypothesisChange(e.target.value)}
-                placeholder="Describe the hypothesis behind these changes..."
+                placeholder={editingMode ? "Update your hypothesis as your reasoning evolves..." : "Your hypothesis will appear here after capture"}
                 rows={4}
-                className="bg-white border-orange-200 focus:border-orange-300 text-orange-900"
+                className={`${editingMode ? 'bg-white border-green-200 focus:border-green-300 text-green-900' : 'bg-white border-orange-200 focus:border-orange-300 text-orange-900'}`}
+                readOnly={!editingMode}
               />
-              <p className="text-xs text-orange-600 mt-2">
-                This helps track what changes drive conversion and what doesn't.
-              </p>
+              <div className={`text-xs mt-2 ${editingMode ? 'text-green-600' : 'text-orange-600'}`}>
+                {editingMode ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>Hypothesis captured! This tracks what changes drive conversion and what doesn't.</span>
+                  </div>
+                ) : (
+                  "Revenue Intelligence: Each hypothesis becomes organizational learning that improves future decisions."
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -349,6 +406,12 @@ export function JourneyPageEditor({
           <PageConsistencyChecker
             pages={pages}
             currentPage={currentPage}
+          />
+
+          {/* Hypothesis Learning History - Story 2.1 AC 2.1.5 */}
+          <HypothesisHistory
+            journeyPageId={currentPage.id}
+            pageType={currentPage.page_type}
           />
 
           {/* Page Metadata */}
