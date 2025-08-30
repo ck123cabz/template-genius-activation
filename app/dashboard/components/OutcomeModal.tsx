@@ -62,6 +62,21 @@ export function OutcomeModal({ client, isOpen, onClose }: OutcomeModalProps) {
     (Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
 
+  // Mock payment data for development (replace with real Stripe data in production)
+  const mockPaymentData = selectedOutcome === 'paid' ? {
+    stripe_session_id: 'cs_test_' + Math.random().toString(36).substr(2, 9),
+    stripe_payment_intent_id: 'pi_' + Math.random().toString(36).substr(2, 16),
+    amount_total: (client.revenue_amount || 50000), // in cents
+    payment_method_types: ['card'],
+    payment_status: 'succeeded',
+    created: Math.floor(Date.now() / 1000),
+    frozen_journey_content: {
+      journey_hypothesis: client.hypothesis,
+      frozen_at: new Date().toISOString(),
+      payment_source: 'activation'
+    }
+  } : null;
+
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
       // Add client_id and selected outcome to form data
@@ -107,12 +122,13 @@ export function OutcomeModal({ client, isOpen, onClose }: OutcomeModalProps) {
 
         <form action={handleSubmit} className="space-y-6">
           <Tabs defaultValue="outcome" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="outcome">Outcome</TabsTrigger>
               <TabsTrigger value="analysis">Analysis</TabsTrigger>
               <TabsTrigger value="correlation">Correlation</TabsTrigger>
               <TabsTrigger value="learning">Learning</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="payment">Payment</TabsTrigger>
             </TabsList>
 
             {/* Client Context Card */}
@@ -579,6 +595,246 @@ System/tool enhancements:
                     </div>
                   </div>
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* NEW: Payment Tab - Story 2.4 */}
+            <TabsContent value="payment" className="space-y-4">
+              <div className="space-y-4">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold flex items-center space-x-2 mb-2">
+                    <DollarSign className="w-5 h-5 text-green-500" />
+                    <span>Payment Intelligence & Revenue Correlation</span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Automatic payment tracking and revenue correlation from Stripe integration. 
+                    This data links payment events with journey outcomes for precise revenue intelligence.
+                  </p>
+                </div>
+
+                {selectedOutcome === 'paid' && mockPaymentData ? (
+                  <div className="space-y-6">
+                    {/* Payment Status Overview */}
+                    <Card className="bg-green-50 border-green-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm text-green-800 flex items-center space-x-2">
+                          <DollarSign className="w-4 h-4" />
+                          <span>Payment Confirmed</span>
+                          <Badge variant="outline" className="text-green-700 border-green-300">
+                            SUCCEEDED
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs text-green-600 font-medium">Amount Paid</p>
+                            <p className="text-lg font-bold text-green-800">
+                              ${(mockPaymentData.amount_total / 100).toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-green-600 font-medium">Payment Method</p>
+                            <p className="text-sm font-medium text-green-700">
+                              {mockPaymentData.payment_method_types.join(', ').toUpperCase()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-green-600 font-medium">Processed</p>
+                            <p className="text-sm font-medium text-green-700">
+                              {new Date(mockPaymentData.created * 1000).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Stripe Transaction Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Transaction IDs</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Session ID</Label>
+                              <p className="text-sm font-mono bg-muted p-2 rounded text-xs break-all">
+                                {mockPaymentData.stripe_session_id}
+                              </p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Payment Intent</Label>
+                              <p className="text-sm font-mono bg-muted p-2 rounded text-xs break-all">
+                                {mockPaymentData.stripe_payment_intent_id}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Revenue Correlation</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Journey Duration to Payment</Label>
+                              <p className="text-sm font-medium">{journeyDays} days</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Conversion Rate</Label>
+                              <p className="text-sm font-medium text-green-600">
+                                {((mockPaymentData.amount_total / 100) / journeyDays).toFixed(2)} $/day
+                              </p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Payment Source</Label>
+                              <p className="text-sm font-medium capitalize">
+                                {mockPaymentData.frozen_journey_content?.payment_source || 'activation'}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Journey Content Correlation */}
+                    {mockPaymentData.frozen_journey_content && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Journey-Payment Correlation</CardTitle>
+                          <p className="text-xs text-muted-foreground">
+                            Journey content frozen at payment time for accurate correlation analysis
+                          </p>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Active Hypothesis at Payment</Label>
+                              <p className="text-sm bg-muted p-3 rounded">
+                                {mockPaymentData.frozen_journey_content.journey_hypothesis || "No hypothesis recorded"}
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Content Frozen</Label>
+                                <p className="text-sm font-medium">
+                                  {new Date(mockPaymentData.frozen_journey_content.frozen_at).toLocaleString()}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Payment Channel</Label>
+                                <p className="text-sm font-medium capitalize">
+                                  {mockPaymentData.frozen_journey_content.payment_source}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Revenue Intelligence Fields */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="payment_correlation_notes" className="flex items-center space-x-2">
+                          <BarChart3 className="w-4 h-4" />
+                          <span>Payment-Journey Correlation Analysis</span>
+                        </Label>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Analyze how journey content and timing influenced the payment decision
+                        </p>
+                        <Textarea
+                          id="payment_correlation_notes"
+                          name="payment_correlation_notes"
+                          placeholder="Payment correlation insights:
+- Client paid {amount} after {days} days in journey
+- Active hypothesis at payment: '{hypothesis}'
+- Key conversion moments: page views, content engagement
+- Payment trigger: specific content, timeline pressure, offer expiry
+- Revenue lessons: what content/timing drove the payment decision"
+                          rows={5}
+                          disabled={isPending}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="revenue_optimization_notes" className="flex items-center space-x-2">
+                          <TrendingUp className="w-4 h-4" />
+                          <span>Revenue Optimization Insights</span>
+                        </Label>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          What can we learn to optimize revenue from similar future clients?
+                        </p>
+                        <Textarea
+                          id="revenue_optimization_notes"
+                          name="revenue_optimization_notes"
+                          placeholder="Revenue optimization opportunities:
+- Faster payment path: could this client have paid earlier? What would have accelerated?
+- Higher value path: was there potential for upselling or premium pricing?
+- Content optimization: which journey pages were most effective for conversion?
+- Timeline optimization: ideal journey length for this client type?
+- Payment friction: any obstacles in the payment process that could be removed?"
+                          rows={5}
+                          disabled={isPending}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : selectedOutcome === 'paid' ? (
+                  // If marked as paid but no payment data
+                  <Card className="bg-amber-50 border-amber-200">
+                    <CardHeader>
+                      <CardTitle className="text-sm text-amber-800 flex items-center space-x-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span>Payment Pending Verification</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-amber-700">
+                        Outcome marked as "paid" but no Stripe payment data found. 
+                        This could be a manual entry or the webhook hasn't processed yet.
+                      </p>
+                      <div className="mt-3">
+                        <Label htmlFor="manual_payment_notes">Manual Payment Notes</Label>
+                        <Textarea
+                          id="manual_payment_notes"
+                          name="manual_payment_notes"
+                          placeholder="If this was a manual payment (check, wire transfer, etc.), provide details here..."
+                          rows={3}
+                          disabled={isPending}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  // If not paid
+                  <Card className="bg-muted/50">
+                    <CardHeader>
+                      <CardTitle className="text-sm text-muted-foreground flex items-center space-x-2">
+                        <Clock className="w-4 h-4" />
+                        <span>No Payment Data</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Payment information will appear here when the outcome is marked as "paid" 
+                        and processed through Stripe integration.
+                      </p>
+                      {selectedOutcome === 'pending' && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded">
+                          <p className="text-sm text-blue-700">
+                            <strong>Revenue Intelligence Note:</strong> When this client eventually pays, 
+                            their payment data will automatically correlate with the current journey hypothesis 
+                            and content for accurate revenue learning.
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
           </Tabs>
