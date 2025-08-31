@@ -54,70 +54,35 @@ import { getClientJourneyProgress } from "@/app/actions/journey-actions";
 import { useFormState } from "react-dom";
 import { JourneyProgressCompact, JourneyStatusBadge } from "./JourneyProgress";
 
+import { OutcomeModal } from "./OutcomeModal";
+
 interface ClientListProps {
-  initialClients: Client[];
+  clients: Client[];
+  journeyProgressMap: Map<number, JourneyProgress>;
 }
 
-export default function ClientList({ initialClients }: ClientListProps) {
-  const [clients] = useState(initialClients);
+export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "activated">("all");
   const [isPending, startTransition] = useTransition();
-  const [journeyProgressMap, setJourneyProgressMap] = useState<Map<number, JourneyProgress>>(new Map());
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const [createState, createAction] = useFormState(
-    async (prevState: any, formData: FormData) => {
-      const result = await createClient(formData);
-      if (result.success) {
-        setIsCreateDialogOpen(false);
-        // Load journey progress for the new client
-        if (result.client) {
-          loadJourneyProgress(result.client.id);
-        }
-      }
-      return result;
-    },
-    { success: false },
-  );
-
-  // Load journey progress for all clients
-  useEffect(() => {
-    const loadAllJourneyProgress = async () => {
-      const progressMap = new Map<number, JourneyProgress>();
-      
-      for (const client of clients) {
-        await loadJourneyProgress(client.id, progressMap);
-      }
-      
-      setJourneyProgressMap(progressMap);
-    };
-
-    loadAllJourneyProgress();
-  }, [clients]);
-
-  // Helper function to load journey progress for a specific client
-  const loadJourneyProgress = async (clientId: number, targetMap?: Map<number, JourneyProgress>) => {
-    try {
-      const result = await getClientJourneyProgress(clientId);
-      if (result.success && result.progress) {
-        const mapToUpdate = targetMap || new Map(journeyProgressMap);
-        mapToUpdate.set(clientId, result.progress);
-        if (!targetMap) {
-          setJourneyProgressMap(mapToUpdate);
-        }
-      }
-    } catch (error) {
-      console.error(`Failed to load journey progress for client ${clientId}:`, error);
+  // Server Actions
+  const createAction = async (formData: FormData) => {
+    const result = await createClient(formData);
+    if (result.success) {
+      setIsCreateDialogOpen(false);
     }
   };
+
+  const [createState, createFormAction] = useFormState(createAction, null);
 
   const filteredClients = clients.filter((client) => {
     const matchesSearch =
       client.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.token.toLowerCase().includes(searchTerm.toLowerCase());
+      client.token?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" || client.status === statusFilter;
@@ -125,27 +90,26 @@ export default function ClientList({ initialClients }: ClientListProps) {
     return matchesSearch && matchesStatus;
   });
 
-  const handleStatusUpdate = (
-    clientId: number,
-    status: "pending" | "activated",
-  ) => {
-    startTransition(() => {
-      updateClientStatus(clientId, status);
+  const handleStatusUpdate = (clientId: number, newStatus: "pending" | "activated") => {
+    startTransition(async () => {
+      await updateClientStatus(clientId, newStatus);
     });
   };
 
   const handleDelete = (clientId: number) => {
-    startTransition(() => {
-      deleteClient(clientId);
-    });
+    if (confirm("Are you sure you want to delete this client?")) {
+      startTransition(async () => {
+        await deleteClient(clientId);
+      });
+    }
   };
 
   const copyActivationLink = (clientId: number) => {
-    const link = `${window.location.origin}/activate/${clientId}`;
-    navigator.clipboard.writeText(link);
+    const url = `${window.location.origin}/activate/${clientId}`;
+    navigator.clipboard.writeText(url);
+    // You could add a toast notification here
   };
 
-  // Story 2.2: Outcome tracking handlers
   const handleOutcomeUpdate = (clientId: number, outcome: JourneyOutcome, notes?: string) => {
     startTransition(() => {
       updateClientOutcome(clientId, outcome, notes);
@@ -284,7 +248,7 @@ export default function ClientList({ initialClients }: ClientListProps) {
             <DialogHeader>
               <DialogTitle>Create New Client</DialogTitle>
             </DialogHeader>
-            <form action={createAction} className="space-y-4">
+            <form action={createFormAction} className="space-y-4">
               <div>
                 <Label htmlFor="company">Company</Label>
                 <Input id="company" name="company" required />
@@ -483,23 +447,35 @@ export default function ClientList({ initialClients }: ClientListProps) {
                     />
                   </div>
                 )}
-                {/* Story 2.2: Outcome Tracking Section */}
+                {/* Story 2.3: Enhanced Outcome Tracking Section with OutcomeModal */}
                 <div className="border-t pt-2 mt-2">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium flex items-center">
                       <Target className="w-4 h-4 mr-1 text-purple-600" />
                       Journey Outcome
                     </p>
-                    {(() => {
-                      const badge = getOutcomeBadge(client.journey_outcome);
-                      const Icon = badge.icon;
-                      return (
-                        <Badge className={badge.className}>
-                          <Icon className="w-3 h-3 mr-1" />
-                          {badge.label}
-                        </Badge>
-                      );
-                    })()}
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const badge = getOutcomeBadge(client.journey_outcome);
+                        const Icon = badge.icon;
+                        return (
+                          <Badge className={badge.className}>
+                            <Icon className="w-3 h-3 mr-1" />
+                            {badge.label}
+                          </Badge>
+                        );
+                      })()}
+                      {/* Story 2.3: OutcomeModal Integration */}
+                      <OutcomeModal
+                        client={client}
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            <Target className="w-3 h-3 mr-1" />
+                            Manage
+                          </Button>
+                        }
+                      />
+                    </div>
                   </div>
                   {client.outcome_notes && (
                     <p className="text-xs text-muted-foreground mb-2 leading-relaxed">

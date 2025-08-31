@@ -4,7 +4,7 @@ import {
   serverClientService,
   serverContentService,
 } from "@/lib/supabase-server";
-import ClientList from "./components/ClientList";
+import { ClientList } from "./components/ClientList";
 import ContentEditor from "./components/ContentEditor";
 
 // Force dynamic rendering
@@ -24,7 +24,7 @@ async function DashboardData() {
         <TabsTrigger value="content">Content</TabsTrigger>
       </TabsList>
       <TabsContent value="clients">
-        <ClientList initialClients={clients} />
+        <ClientList clients={clients} journeyProgressMap={new Map()} />
       </TabsContent>
       <TabsContent value="content">
         <ContentEditor initialContent={content} />

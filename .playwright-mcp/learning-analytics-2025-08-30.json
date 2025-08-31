@@ -1,0 +1,24 @@
+{
+  "generated_at": "2025-08-30T03:05:23.792Z",
+  "summary": {
+    "total_hypotheses": 0,
+    "validated_count": 0,
+    "invalidated_count": 0,
+    "active_count": 0,
+    "avg_confidence": 0,
+    "total_conversion_lift": 0,
+    "success_rate": 0,
+    "recent_learnings": 0
+  },
+  "patterns": {
+    "by_page_type": {},
+    "by_change_type": {},
+    "success_factors": []
+  },
+  "hypotheses": [],
+  "metadata": {
+    "total_records": 0,
+    "format": "json",
+    "version": "1.0"
+  }
+}

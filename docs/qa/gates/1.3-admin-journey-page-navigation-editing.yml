@@ -3,7 +3,7 @@
 
 schema: 1
 story: "1.3"
-story_title: "Admin Journey Page Navigation & Editing"
+story_title: "Revenue Intelligence Learning Capture - Hypothesis-Driven Content Editing"
 gate: PASS
 status_reason: "All acceptance criteria fully implemented with professional UX integration. Comprehensive hypothesis capture functionality working correctly."
 reviewer: "Quinn (Test Architect)"

@@ -110,10 +110,75 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       return;
     }
 
-    // Update client with payment information and outcome
+    // Calculate conversion duration if journey start time is available
+    let conversionDuration: number | undefined;
+    if (paymentIntent.metadata?.journey_start_time) {
+      try {
+        const startTime = new Date(paymentIntent.metadata.journey_start_time);
+        const endTime = new Date();
+        conversionDuration = endTime.getTime() - startTime.getTime();
+      } catch (error) {
+        console.warn("Invalid journey_start_time in payment metadata:", error);
+      }
+    }
+
+    // Story 2.3: Create payment-outcome correlation record
+    const { createPaymentCorrelation } = await import("@/app/actions/correlation-actions");
+    
+    const correlationResult = await createPaymentCorrelation({
+      stripePaymentIntentId: paymentIntent.id,
+      clientId: client.id,
+      outcomeType: 'paid',
+      paymentMetadata: {
+        // Core payment data
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        payment_method: paymentIntent.payment_method_types?.[0] || 'unknown',
+        
+        // Existing metadata
+        client_token: paymentIntent.metadata?.client_token,
+        client_id: paymentIntent.metadata?.client_id,
+        journey_id: paymentIntent.metadata?.journey_id,
+        
+        // Enhanced Story 2.3 metadata
+        content_version_id: paymentIntent.metadata?.content_version_id,
+        journey_start_time: paymentIntent.metadata?.journey_start_time,
+        page_sequence: paymentIntent.metadata?.page_sequence,
+        journey_hypothesis: paymentIntent.metadata?.journey_hypothesis,
+        page_hypotheses: paymentIntent.metadata?.page_hypotheses,
+        referrer: paymentIntent.metadata?.referrer,
+        user_agent: paymentIntent.metadata?.user_agent,
+        conversion_duration: conversionDuration?.toString(),
+      },
+      journeyContext: {
+        payment_intent_id: paymentIntent.id,
+        payment_method_selected: paymentIntent.payment_method_types?.[0],
+        amount_paid: paymentIntent.amount / 100,
+        currency: paymentIntent.currency,
+        processing_time: new Date().toISOString(),
+        
+        // Enhanced journey context
+        pages_visited: paymentIntent.metadata?.page_sequence ? JSON.parse(paymentIntent.metadata.page_sequence) : [],
+        hypothesis_context: paymentIntent.metadata?.journey_hypothesis,
+        attribution: {
+          referrer: paymentIntent.metadata?.referrer,
+          user_agent: paymentIntent.metadata?.user_agent,
+        },
+      },
+      conversionDuration,
+    });
+
+    if (!correlationResult.success) {
+      console.error("Failed to create payment correlation:", correlationResult.error);
+      // Continue with existing outcome update even if correlation fails
+    } else {
+      console.log(`Payment correlation created: ${correlationResult.correlationId}`);
+    }
+
+    // Update client with payment information and outcome (existing functionality)
     const updates = {
       journey_outcome: "paid",
-      outcome_notes: `Payment successful via Stripe. Amount: $${(paymentIntent.amount / 100).toFixed(2)} USD. Payment ID: ${paymentIntent.id}`,
+      outcome_notes: `Payment successful via Stripe. Amount: $${(paymentIntent.amount / 100).toFixed(2)} USD. Payment ID: ${paymentIntent.id}. ${correlationResult.success ? `Correlation ID: ${correlationResult.correlationId}` : 'Correlation creation failed.'}`,
       outcome_timestamp: new Date().toISOString(),
       payment_received: true,
       payment_amount: paymentIntent.amount / 100, // Convert from cents
@@ -132,7 +197,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
 
     console.log(`Client ${client.id} (${client.token}) marked as paid: $${(paymentIntent.amount / 100).toFixed(2)}`);
 
-    // Optional: Update journey status if journey_id is provided
+    // Optional: Update journey status if journey_id is provided (existing functionality)
     if (journeyId) {
       await supabaseServer
         .from("journey_pages")
@@ -143,6 +208,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
             payment_processed: true,
             payment_intent_id: paymentIntent.id,
             amount_paid: paymentIntent.amount / 100,
+            correlation_id: correlationResult.correlationId,
           },
         })
         .eq("id", parseInt(journeyId));
@@ -187,9 +253,82 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
       return;
     }
 
-    // Update client with payment failure information
+    // Calculate conversion duration if journey start time is available
+    let conversionDuration: number | undefined;
+    if (paymentIntent.metadata?.journey_start_time) {
+      try {
+        const startTime = new Date(paymentIntent.metadata.journey_start_time);
+        const endTime = new Date();
+        conversionDuration = endTime.getTime() - startTime.getTime();
+      } catch (error) {
+        console.warn("Invalid journey_start_time in failed payment metadata:", error);
+      }
+    }
+
+    // Story 2.3: Create payment failure correlation record
+    const { createPaymentCorrelation } = await import("@/app/actions/correlation-actions");
+    
+    const correlationResult = await createPaymentCorrelation({
+      stripePaymentIntentId: paymentIntent.id,
+      clientId: client.id,
+      outcomeType: 'failed',
+      paymentMetadata: {
+        // Core payment data
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        payment_method: paymentIntent.payment_method_types?.[0] || 'unknown',
+        failure_reason: paymentIntent.last_payment_error?.message || 'Unknown error',
+        failure_code: paymentIntent.last_payment_error?.code,
+        
+        // Existing metadata
+        client_token: paymentIntent.metadata?.client_token,
+        client_id: paymentIntent.metadata?.client_id,
+        journey_id: paymentIntent.metadata?.journey_id,
+        
+        // Enhanced Story 2.3 metadata
+        content_version_id: paymentIntent.metadata?.content_version_id,
+        journey_start_time: paymentIntent.metadata?.journey_start_time,
+        page_sequence: paymentIntent.metadata?.page_sequence,
+        journey_hypothesis: paymentIntent.metadata?.journey_hypothesis,
+        page_hypotheses: paymentIntent.metadata?.page_hypotheses,
+        referrer: paymentIntent.metadata?.referrer,
+        user_agent: paymentIntent.metadata?.user_agent,
+        conversion_duration: conversionDuration?.toString(),
+      },
+      journeyContext: {
+        payment_intent_id: paymentIntent.id,
+        payment_method_attempted: paymentIntent.payment_method_types?.[0],
+        amount_attempted: paymentIntent.amount / 100,
+        currency: paymentIntent.currency,
+        failure_timestamp: new Date().toISOString(),
+        failure_details: {
+          message: paymentIntent.last_payment_error?.message,
+          code: paymentIntent.last_payment_error?.code,
+          type: paymentIntent.last_payment_error?.type,
+        },
+        
+        // Enhanced journey context
+        pages_visited: paymentIntent.metadata?.page_sequence ? JSON.parse(paymentIntent.metadata.page_sequence) : [],
+        hypothesis_context: paymentIntent.metadata?.journey_hypothesis,
+        attribution: {
+          referrer: paymentIntent.metadata?.referrer,
+          user_agent: paymentIntent.metadata?.user_agent,
+        },
+      },
+      conversionDuration,
+    });
+
+    if (!correlationResult.success) {
+      console.error("Failed to create payment failure correlation:", correlationResult.error);
+      // Continue with existing outcome update even if correlation fails
+    } else {
+      console.log(`Payment failure correlation created: ${correlationResult.correlationId}`);
+    }
+
+    // Update client with payment failure information (existing functionality enhanced)
     const updates = {
-      outcome_notes: `Payment failed via Stripe. Reason: ${paymentIntent.last_payment_error?.message || "Unknown error"}. Payment ID: ${paymentIntent.id}`,
+      journey_outcome: "pending", // Keep as pending rather than failed to allow retry
+      outcome_notes: `Payment failed via Stripe. Reason: ${paymentIntent.last_payment_error?.message || "Unknown error"}. Payment ID: ${paymentIntent.id}. ${correlationResult.success ? `Correlation ID: ${correlationResult.correlationId}` : 'Correlation creation failed.'}`,
       outcome_timestamp: new Date().toISOString(),
     };
 
@@ -203,7 +342,7 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
       return;
     }
 
-    console.log(`Client ${client.id} (${client.token}) payment failed, notes updated`);
+    console.log(`Client ${client.id} (${client.token}) payment failed, notes updated with correlation tracking`);
   } catch (error) {
     console.error("Error processing failed payment:", error);
   }
@@ -244,10 +383,88 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return;
     }
 
-    // Update client with checkout completion
-    const updates = {
+    // Calculate conversion duration if journey start time is available
+    let conversionDuration: number | undefined;
+    if (session.metadata?.journey_start_time) {
+      try {
+        const startTime = new Date(session.metadata.journey_start_time);
+        const endTime = new Date();
+        conversionDuration = endTime.getTime() - startTime.getTime();
+      } catch (error) {
+        console.warn("Invalid journey_start_time in checkout session metadata:", error);
+      }
+    }
+
+    // Determine outcome type based on payment status
+    const outcomeType = session.payment_status === "paid" ? "paid" : 
+                       session.payment_status === "unpaid" ? "pending" : "pending";
+
+    // Story 2.3: Create checkout completion correlation record
+    const { createPaymentCorrelation } = await import("@/app/actions/correlation-actions");
+    
+    const correlationResult = await createPaymentCorrelation({
+      stripePaymentIntentId: session.payment_intent as string || `checkout_${session.id}`,
+      stripeSessionId: session.id,
+      clientId: client.id,
+      outcomeType,
+      paymentMetadata: {
+        // Core session data
+        amount: session.amount_total || 0,
+        currency: session.currency || 'usd',
+        payment_method: session.payment_method_types?.[0] || 'unknown',
+        payment_status: session.payment_status,
+        session_id: session.id,
+        
+        // Existing metadata
+        client_token: session.metadata?.client_token,
+        client_id: session.metadata?.client_id,
+        journey_id: session.metadata?.journey_id,
+        
+        // Enhanced Story 2.3 metadata
+        content_version_id: session.metadata?.content_version_id,
+        journey_start_time: session.metadata?.journey_start_time,
+        page_sequence: session.metadata?.page_sequence,
+        journey_hypothesis: session.metadata?.journey_hypothesis,
+        page_hypotheses: session.metadata?.page_hypotheses,
+        referrer: session.metadata?.referrer,
+        user_agent: session.metadata?.user_agent,
+        conversion_duration: conversionDuration?.toString(),
+      },
+      journeyContext: {
+        session_id: session.id,
+        payment_intent_id: session.payment_intent,
+        payment_status: session.payment_status,
+        amount_total: session.amount_total ? session.amount_total / 100 : 0,
+        currency: session.currency,
+        checkout_completion_time: new Date().toISOString(),
+        
+        // Enhanced journey context for checkout
+        pages_visited: session.metadata?.page_sequence ? JSON.parse(session.metadata.page_sequence) : [],
+        hypothesis_context: session.metadata?.journey_hypothesis,
+        attribution: {
+          referrer: session.metadata?.referrer,
+          user_agent: session.metadata?.user_agent,
+        },
+        checkout_details: {
+          mode: session.mode,
+          success_url: session.success_url,
+          cancel_url: session.cancel_url,
+        },
+      },
+      conversionDuration,
+    });
+
+    if (!correlationResult.success) {
+      console.error("Failed to create checkout completion correlation:", correlationResult.error);
+      // Continue with existing outcome update even if correlation fails
+    } else {
+      console.log(`Checkout completion correlation created: ${correlationResult.correlationId}`);
+    }
+
+    // Update client with checkout completion (existing functionality enhanced)
+    const updates: any = {
       journey_outcome: session.payment_status === "paid" ? "paid" : "pending",
-      outcome_notes: `Checkout completed via Stripe. Session ID: ${session.id}. Status: ${session.payment_status}`,
+      outcome_notes: `Checkout completed via Stripe. Session ID: ${session.id}. Status: ${session.payment_status}. ${correlationResult.success ? `Correlation ID: ${correlationResult.correlationId}` : 'Correlation creation failed.'}`,
       outcome_timestamp: new Date().toISOString(),
     };
 
@@ -267,7 +484,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return;
     }
 
-    console.log(`Client ${client.id} (${client.token}) checkout completed with status: ${session.payment_status}`);
+    console.log(`Client ${client.id} (${client.token}) checkout completed with status: ${session.payment_status} and correlation tracking`);
   } catch (error) {
     console.error("Error processing checkout completion:", error);
   }

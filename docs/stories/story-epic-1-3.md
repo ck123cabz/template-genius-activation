@@ -1,4 +1,4 @@
-# Story 1.3: Admin Journey Page Navigation & Editing
+# Story 1.3: Revenue Intelligence Learning Capture - Hypothesis-Driven Content Editing
 
 ## Status
 **Ready for Review**

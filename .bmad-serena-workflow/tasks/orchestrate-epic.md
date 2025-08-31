@@ -28,49 +28,202 @@ Execute a complete epic by orchestrating iterative SM→Dev→QA cycles with lea
 FOR EACH STORY IN SEQUENCE (1, 2, 3...):
 
 #### Step A: SM Agent - Create Next Story
-```
-Context to provide:
-- Epic requirements from PRD
-- Architecture guidelines
-- Previous story learnings (if not first story)
-- Existing components/patterns to reuse
+```yaml
+context_to_provide:
+- epic_requirements: "docs/prd/epic-{number}.md"
+- architecture_guidelines: "docs/architecture/*.md"
+- previous_learnings: "from previous story extraction"
+- existing_components: "patterns to reuse"
 
-Invoke SM agent to:
-- Create single story file
-- Include regression test requirements
-- Reference existing components
-- Output: docs/stories/story-epic-{epic}-{number}.md
+invoke_sm_agent:
+  task: create_single_story
+  output_file: "docs/stories/story-epic-{epic}-{number}.md"
+  requirements:
+    - include_regression_test_requirements
+    - reference_existing_components
+    - follow_story_template: ".bmad-core/templates/story-tmpl.yaml"
+```
+
+#### Step A1: Verify SM Agent Compliance (MANDATORY CHECKPOINT)
+```yaml
+execute_task: "mandatory-checkpoint-system.md"
+checkpoint: "A1"
+parameters:
+  story_file_path: "docs/stories/story-epic-{epic}-{number}.md"
+  agent_type: "sm"
+  verification_stage: "post_sm"
+
+CRITICAL_COMPLIANCE_CHECK:
+  - status_change: "DRAFT -> APPROVED" (EXACT MATCH REQUIRED)
+  - story_section_complete: "As a [role], I want [action] so that [benefit] format"
+  - acceptance_criteria_numbered: "3+ testable criteria"
+  - tasks_subtasks_hierarchical: "Detailed breakdown with AC references"
+  - dev_notes_comprehensive: "Architecture context + testing requirements"
+  - template_compliance: "100% adherence to story-tmpl.yaml"
+  - no_placeholder_content: "No TODO, TBD, or incomplete sections"
+
+HALT_ON_NON_COMPLIANT: true
+MAX_RETRIES: 2
+ESCALATION_ON_FAILURE: "Human intervention after 2 retry failures"
+
+on_non_compliant:
+  action: HALT_ORCHESTRATION_AND_HANDBACK
+  specific_failures_provided: true
+  remediation_instructions_detailed: true
+
+on_compliant:
+  action: proceed_to_dev_phase
 ```
 
 #### Step B: Dev Agent - Implement Story
-```
-Context to provide:
-- Story file path created by SM
-- Architecture patterns to follow
-- Previous implementation notes
+```yaml
+context_to_provide:
+- story_file_path: "docs/stories/story-epic-{epic}-{number}.md"
+- architecture_patterns: "docs/architecture/*.md"
+- previous_implementation_notes: "from learning extraction"
 
-Invoke Dev agent to:
-- Read story requirements
-- Implement using standard BMAD dev workflow
-- Update Dev Agent Record in story file
-- Run validations (lint, typecheck, tests)
-- Commit with BMAD story reference
-- Output: Updated story file with implementation details
+invoke_dev_agent:
+  task: develop_story
+  requirements:
+    - read_story_requirements
+    - implement_using_bmad_workflow
+    - update_dev_agent_record_in_story_file
+    - run_validations: [lint, typecheck, tests]
+    - commit_with_bmad_story_reference
+  output: "updated story file with implementation details"
+```
+
+#### Step B1: Verify Dev Agent Compliance (CRITICAL CHECKPOINT - PREVENTS STORY 2.3 FAILURE)
+```yaml
+execute_task: "mandatory-checkpoint-system.md"
+checkpoint: "B1"
+parameters:
+  story_file_path: "docs/stories/story-epic-{epic}-{number}.md"
+  agent_type: "dev"
+  verification_stage: "post_dev"
+
+CRITICAL_COMPLIANCE_CHECK:
+  checkbox_verification: 
+    scan_command: "grep -n '- \[ \]' story_file"
+    expected_result: "ZERO unchecked boxes"
+    failure_condition: "ANY [ ] found"
+    CRITICAL_RULE: "ZERO tolerance for unchecked boxes if status READY FOR REVIEW"
+    
+  status_change: "APPROVED -> READY FOR REVIEW" (ONLY after all checkboxes [x])
+  
+  dev_agent_record_complete: 
+    - agent_model_used: "Must specify model name/version"
+    - debug_log_references: "Must document debug logs or state 'None'"
+    - completion_notes: "Must document implementation approach"
+    - file_list: "Must list ALL created/modified/deleted files"
+    
+  implementation_verification:
+    - file_existence_check: "Verify File List files actually exist"
+    - code_quality_check: "Zero TypeScript/lint errors"
+    - test_completion_check: "Tests pass if specified"
+
+HALT_ON_ANY_UNCHECKED_CHECKBOX: true
+MAX_RETRIES: 2  
+ESCALATION_ON_FAILURE: "Human intervention after 2 retry failures"
+
+on_non_compliant:
+  action: HALT_ORCHESTRATION_AND_HANDBACK_TO_DEV
+  failure_message: |
+    CRITICAL FAILURE - ORCHESTRATION HALTED
+    
+    Dev Agent compliance verification FAILED. Story 2.3 failure prevention activated.
+    
+    MISSING REQUIREMENTS:
+    - All task/subtask checkboxes must be [x] before status READY FOR REVIEW
+    - Dev Agent Record section must be 100% complete
+    - File List must document all implementation files
+    
+    SPECIFICATION REFERENCE: .bmad-core/agents/dev.md lines 59-67
+    
+    Complete ALL task checkboxes and Dev Agent Record before proceeding.
+    
+on_compliant:
+  action: proceed_to_qa_phase
+  log: "Dev Agent checkpoint passed - all checkboxes verified [x]"
 ```
 
 #### Step C: QA Agent - Review Implementation
-```
-Context to provide:
-- Story file with Dev implementation
-- Test results from Dev phase
-- Risk profile for story type
+```yaml
+context_to_provide:
+- story_file_with_dev_implementation: "docs/stories/story-epic-{epic}-{number}.md"
+- test_results_from_dev_phase: "validation output"
+- risk_profile: "based on story type"
 
-Invoke QA agent to:
-- Review implementation against requirements
-- Assess code quality and test coverage
-- Create quality gate decision
-- Update QA Results in story file
-- Output: Quality gate (PASS/CONCERNS/FAIL)
+invoke_qa_agent:
+  task: review_story_implementation
+  requirements:
+    - review_implementation_against_requirements
+    - assess_code_quality_and_test_coverage
+    - create_quality_gate_decision
+    - update_qa_results_in_story_file
+    - create_qa_gate_file: "docs/qa/gates/{epic}.{story}-{slug}.yml"
+  output: "quality gate decision (PASS/CONCERNS/FAIL/WAIVED)"
+```
+
+#### Step C1: Verify QA Agent Compliance (MANDATORY CHECKPOINT)
+```yaml
+execute_task: "mandatory-checkpoint-system.md"
+checkpoint: "C1"
+parameters:
+  story_file_path: "docs/stories/story-epic-{epic}-{number}.md"
+  agent_type: "qa"
+  verification_stage: "post_qa"
+
+CRITICAL_COMPLIANCE_CHECK:
+  qa_results_section:
+    comprehensive_review: "Must address ALL acceptance criteria individually"
+    quality_score: "Must provide numerical score (1-10)"
+    gate_decision: "Must provide PASS/CONCERNS/FAIL/WAIVED"
+    evidence_documented: "Screenshots, test results, or validation proof"
+    
+  process_compliance_validation:
+    dev_checkbox_verification: "QA must verify Dev completed all checkboxes [x]"  
+    documentation_accuracy: "Story status must match actual implementation state"
+    workflow_integrity: "Previous agents must have followed specifications"
+    
+  gate_file_creation:
+    location: "docs/qa/gates/{epic}.{story}-{slug}.yml"
+    yaml_valid: "Must be valid YAML with proper structure"
+    decision_consistency: "Gate file must match QA Results decision"
+    
+  change_log_update:
+    entry_required: "QA completion with timestamp and gate decision"
+    format_compliance: "Standard change log format required"
+
+HALT_ON_NON_COMPLIANT: true
+MAX_RETRIES: 2
+ESCALATION_ON_FAILURE: "Human intervention after 2 retry failures"
+
+on_non_compliant:
+  action: HALT_ORCHESTRATION_AND_HANDBACK_TO_QA
+  failure_message: |
+    CRITICAL FAILURE - ORCHESTRATION HALTED
+    
+    QA Agent compliance verification FAILED.
+    
+    MISSING REQUIREMENTS:
+    - QA Results section must be comprehensive with ALL AC addressed
+    - Quality gate decision must be clear (PASS/CONCERNS/FAIL/WAIVED)
+    - Gate file must be created in docs/qa/gates/ directory
+    - Must verify Dev Agent completed all checkboxes before review
+    
+    SPECIFICATION REFERENCE: .bmad-core/agents/qa.md lines 60-63
+    
+    Complete QA Results section and create gate file before proceeding.
+
+on_concerns_or_fail:
+  action: hand_back_to_dev_agent_with_qa_feedback
+  execute: dev_agent_review_qa_fixes
+  require_b1_re_verification: true  # Must re-pass Dev checkpoint after fixes
+
+on_pass:
+  action: proceed_to_learning_extraction
+  log: "QA Agent checkpoint passed - comprehensive review completed"
 ```
 
 #### Step D: Learning Extraction

@@ -63,6 +63,7 @@ commands:
   - resume-epic: Resume epic execution from last checkpoint
   - validate-prerequisites: Check if PRD, architecture, and stories are ready for orchestration
   - preview-plan: Show execution plan for an epic without executing
+  - verify-compliance: Check if agent properly updated their assigned story file sections
   - configure: Display or modify orchestration settings from epic-orchestration.yaml
   - learning-report: Show extracted learnings from completed stories
   - exit: Say goodbye as the Epic Orchestrator, and then abandon inhabiting this persona
@@ -74,6 +75,7 @@ dependencies:
     - spawn-sm-agent.md
     - spawn-dev-agent.md
     - spawn-qa-agent.md
+    - verify-agent-compliance.md
     - extract-story-learnings.md
     - manage-quality-gates.md
     - create-epic-report.md
@@ -94,14 +96,19 @@ dependencies:
     - orchestration-state-manager.yaml
 workflow-patterns:
   iterative-story-cycle:
-    description: Create stories one at a time, building on previous learnings
+    description: Create stories one at a time with mandatory compliance verification after each agent phase
     steps:
       1. SM creates single story based on epic requirements + previous learnings
-      2. Dev implements story using base BMAD dev agent
-      3. QA reviews implementation and creates quality gate
-      4. Extract learnings from implementation
-      5. Pass learnings to next story creation
-      6. Repeat until epic complete
+      2. ORCHESTRATOR VERIFIES: SM compliance using verify-agent-compliance task
+      3. IF NON-COMPLIANT: Hand back to SM with specific requirements, retry up to 2x
+      4. Dev implements story using base BMAD dev agent  
+      5. ORCHESTRATOR VERIFIES: Dev compliance using verify-agent-compliance task
+      6. IF NON-COMPLIANT: Hand back to Dev with specific requirements, retry up to 2x
+      7. QA reviews implementation and creates quality gate
+      8. ORCHESTRATOR VERIFIES: QA compliance using verify-agent-compliance task
+      9. IF NON-COMPLIANT: Hand back to QA, or to Dev if CONCERNS/FAIL
+      10. Extract learnings from completed story for next iteration
+      11. Repeat until epic complete
   agent-invocation:
     description: How to spawn and coordinate sub-agents
     approach: |

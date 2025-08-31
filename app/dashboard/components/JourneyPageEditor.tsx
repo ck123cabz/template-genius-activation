@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,8 +22,11 @@ import {
 } from "lucide-react";
 import { Client, JourneyPage } from "@/lib/supabase";
 import { updateJourneyPageContent, updateJourneyPageHypothesis } from "@/app/actions/journey-actions";
+import { ContentHypothesis, getCurrentActiveHypothesis } from "@/app/actions/hypothesis-actions";
+import { HypothesisModal } from "@/components/ui/HypothesisModal";
 import { JourneyNavigation } from "./JourneyNavigation";
 import { PageConsistencyChecker } from "./PageConsistencyChecker";
+import { HypothesisHistory } from "./HypothesisHistory";
 
 interface JourneyPageEditorProps {
   client: Client;
@@ -48,6 +51,31 @@ export function JourneyPageEditor({
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // Hypothesis-first workflow state
+  const [editingMode, setEditingMode] = useState(false);
+  const [showHypothesisModal, setShowHypothesisModal] = useState(false);
+  const [currentHypothesisId, setCurrentHypothesisId] = useState<number | null>(null);
+  const [currentHypothesis, setCurrentHypothesis] = useState<ContentHypothesis | null>(null);
+  const [originalContent, setOriginalContent] = useState({ title: currentPage.title, content: currentPage.content });
+
+  // Load current active hypothesis on mount
+  useEffect(() => {
+    loadCurrentHypothesis();
+  }, [currentPage.id]);
+
+  const loadCurrentHypothesis = async () => {
+    try {
+      const result = await getCurrentActiveHypothesis(currentPage.id);
+      if (result.success && result.hypothesis) {
+        setCurrentHypothesis(result.hypothesis);
+        setCurrentHypothesisId(result.hypothesis.id || null);
+        setEditingMode(true); // If there's an active hypothesis, editing is allowed
+      }
+    } catch (error) {
+      console.error("Error loading current hypothesis:", error);
+    }
+  };
 
   // Track changes
   const markAsChanged = () => {
@@ -57,12 +85,44 @@ export function JourneyPageEditor({
     }
   };
 
+  // Hypothesis-first edit enforcement
+  const handleFirstEditAttempt = () => {
+    if (!editingMode && !currentHypothesisId) {
+      setShowHypothesisModal(true);
+      return false; // Block edit until hypothesis captured
+    }
+    return true; // Allow edit
+  };
+
+  const handleHypothesisComplete = (hypothesis?: ContentHypothesis) => {
+    if (hypothesis) {
+      setCurrentHypothesis(hypothesis);
+      setCurrentHypothesisId(hypothesis.id || null);
+      setEditingMode(true);
+      setShowHypothesisModal(false);
+    } else {
+      // Cancelled - reset any attempted changes
+      setTitle(originalContent.title);
+      setContent(originalContent.content);
+      setHasChanges(false);
+      setShowHypothesisModal(false);
+    }
+  };
+
   const handleTitleChange = (value: string) => {
+    if (!handleFirstEditAttempt()) {
+      // Store attempted change but don't apply it yet
+      return;
+    }
     setTitle(value);
     markAsChanged();
   };
 
   const handleContentChange = (value: string) => {
+    if (!handleFirstEditAttempt()) {
+      // Store attempted change but don't apply it yet
+      return;
+    }
     setContent(value);
     markAsChanged();
   };
@@ -250,30 +310,77 @@ export function JourneyPageEditor({
             </CardContent>
           </Card>
 
-          {/* Hypothesis Capture */}
-          <Card className="border-orange-200 bg-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-900">
-                <Edit3 className="h-5 w-5" />
-                Edit Hypothesis
-              </CardTitle>
-              <CardDescription className="text-orange-700">
-                Document why you're making these changes (following Story 1.1 pattern)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={hypothesis}
-                onChange={(e) => handleHypothesisChange(e.target.value)}
-                placeholder="Describe the hypothesis behind these changes..."
-                rows={4}
-                className="bg-white border-orange-200 focus:border-orange-300 text-orange-900"
-              />
-              <p className="text-xs text-orange-600 mt-2">
-                This helps track what changes drive conversion and what doesn't.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Current Hypothesis Display */}
+          {currentHypothesis ? (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-900">
+                  <Edit3 className="h-5 w-5" />
+                  Active Hypothesis
+                </CardTitle>
+                <CardDescription className="text-blue-700">
+                  Current learning hypothesis for this editing session
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="p-3 bg-white border border-blue-200 rounded">
+                    <p className="text-sm text-blue-900 font-medium">
+                      {currentHypothesis.hypothesis}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-100 text-blue-800">
+                        {currentHypothesis.change_type}
+                      </Badge>
+                      <Badge variant="outline">
+                        Confidence: {currentHypothesis.confidence_level}/10
+                      </Badge>
+                    </div>
+                    <span className="text-blue-600">
+                      {currentHypothesis.created_at && 
+                        new Date(currentHypothesis.created_at).toLocaleDateString()
+                      }
+                    </span>
+                  </div>
+                  {currentHypothesis.predicted_outcome && (
+                    <div className="p-2 bg-blue-50 border border-blue-200 rounded">
+                      <p className="text-xs font-medium text-blue-800">Expected Outcome:</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        {currentHypothesis.predicted_outcome}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-900">
+                  <Edit3 className="h-5 w-5" />
+                  Hypothesis Required
+                </CardTitle>
+                <CardDescription className="text-orange-700">
+                  Create a hypothesis before editing to capture learning
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-4">
+                  <p className="text-sm text-orange-800 mb-3">
+                    To edit this page, you'll need to create a hypothesis about what you expect your changes to accomplish.
+                  </p>
+                  <Button
+                    onClick={() => setShowHypothesisModal(true)}
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    Create Hypothesis to Start Editing
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -284,6 +391,15 @@ export function JourneyPageEditor({
             currentPage={currentPage}
             client={client}
             hasUnsavedChanges={hasChanges}
+          />
+
+          {/* Hypothesis History */}
+          <HypothesisHistory
+            journeyPageId={currentPage.id}
+            onHypothesisSelect={(hypothesis) => {
+              // Could implement hypothesis context viewing here
+              console.log("Selected hypothesis:", hypothesis);
+            }}
           />
 
           {/* Page Consistency Checker */}
@@ -326,6 +442,16 @@ export function JourneyPageEditor({
           </Card>
         </div>
       </div>
+
+      {/* Hypothesis Modal */}
+      <HypothesisModal
+        isOpen={showHypothesisModal}
+        onClose={handleHypothesisComplete}
+        journeyPageId={currentPage.id}
+        pageTitle={`${formatPageType(pageType)} Page`}
+        previousContent={JSON.stringify({ title: originalContent.title, content: originalContent.content })}
+        canBypass={false} // Enforce hypothesis requirement
+      />
     </div>
   );
 }

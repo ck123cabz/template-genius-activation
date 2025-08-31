@@ -1,4 +1,4 @@
-# Story 1.1: Client Creation with Journey Hypothesis Tracking
+# Story 1.1: Revenue Intelligence Foundation - Client Creation with Journey Hypothesis Tracking
 
 ## Status
 **COMPLETED** ✅ - **QA PASSED** (2025-08-30)
