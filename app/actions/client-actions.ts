@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase-server";
-import { Client } from "@/lib/supabase";
+import { Client, JourneyOutcome } from "@/lib/supabase";
 
 export async function createClient(
   formData: FormData,
@@ -170,5 +170,98 @@ export async function deleteClient(
   } catch (error) {
     console.error("Unexpected error:", error);
     return { success: false, error: "Failed to delete client" };
+  }
+}
+
+// Story 2.2: Journey Outcome Tracking Server Actions
+export async function updateClientOutcome(
+  clientId: number,
+  outcome: JourneyOutcome,
+  notes?: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const updates: any = {
+      journey_outcome: outcome,
+      outcome_notes: notes || null,
+      outcome_timestamp: new Date().toISOString(),
+    };
+
+    const { error } = await supabaseServer
+      .from("clients")
+      .update(updates)
+      .eq("id", clientId);
+
+    if (error) {
+      console.error("Error updating client outcome:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return { success: false, error: "Failed to update client outcome" };
+  }
+}
+
+export async function updateClientPayment(
+  clientId: number,
+  amount: number,
+  markAsPaid = true,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const updates: any = {
+      payment_received: markAsPaid,
+      payment_amount: amount,
+      payment_timestamp: markAsPaid ? new Date().toISOString() : null,
+      journey_outcome: markAsPaid ? 'paid' : 'pending',
+      outcome_timestamp: new Date().toISOString(),
+    };
+
+    const { error } = await supabaseServer
+      .from("clients")
+      .update(updates)
+      .eq("id", clientId);
+
+    if (error) {
+      console.error("Error updating client payment:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return { success: false, error: "Failed to update client payment" };
+  }
+}
+
+export async function bulkUpdateOutcomes(
+  clientIds: number[],
+  outcome: JourneyOutcome,
+  notes?: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const updates: any = {
+      journey_outcome: outcome,
+      outcome_notes: notes || null,
+      outcome_timestamp: new Date().toISOString(),
+    };
+
+    const { error } = await supabaseServer
+      .from("clients")
+      .update(updates)
+      .in("id", clientIds);
+
+    if (error) {
+      console.error("Error bulk updating client outcomes:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return { success: false, error: "Failed to bulk update client outcomes" };
   }
 }

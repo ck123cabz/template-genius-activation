@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Types for our database tables
+// Journey outcome types for systematic learning capture (Story 2.2)
+export type JourneyOutcome = 'pending' | 'paid' | 'ghosted' | 'responded';
+
 export interface Client {
   id: number;
   company: string;
@@ -14,6 +17,13 @@ export interface Client {
   created_at: string;
   activated_at: string | null;
   logo: string | null;
+  // Story 2.2: Journey Outcome Tracking
+  journey_outcome: JourneyOutcome;
+  outcome_notes: string | null;
+  outcome_timestamp: string | null;
+  payment_received: boolean;
+  payment_amount: number | null;
+  payment_timestamp: string | null;
 }
 
 // Journey page types and status enums
@@ -142,6 +152,13 @@ const mockClients: Client[] = [
     created_at: "2024-01-15T00:00:00Z",
     activated_at: null,
     logo: "/techcorp-logo.png",
+    // Story 2.2: Journey Outcome Tracking
+    journey_outcome: "responded",
+    outcome_notes: "Client responded positively to proposal and requested additional information about timeline. Showing strong interest in premium service package.",
+    outcome_timestamp: "2024-01-17T14:30:00Z",
+    payment_received: false,
+    payment_amount: null,
+    payment_timestamp: null,
   },
 ];;
 // Mock journey page templates

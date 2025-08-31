@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Building2,
   Plus,
   Search,
@@ -23,6 +30,11 @@ import {
   Eye,
   CheckCircle,
   Route,
+  DollarSign,
+  MessageCircle,
+  UserX,
+  Clock,
+  Target,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -30,11 +42,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Client, JourneyProgress, JourneyPage } from "@/lib/supabase";
+import { Client, JourneyProgress, JourneyPage, JourneyOutcome } from "@/lib/supabase";
 import {
   createClient,
   updateClientStatus,
   deleteClient,
+  updateClientOutcome,
+  bulkUpdateOutcomes,
 } from "@/app/actions/client-actions";
 import { getClientJourneyProgress } from "@/app/actions/journey-actions";
 import { useFormState } from "react-dom";
@@ -131,10 +145,31 @@ export default function ClientList({ initialClients }: ClientListProps) {
     navigator.clipboard.writeText(link);
   };
 
+  // Story 2.2: Outcome tracking handlers
+  const handleOutcomeUpdate = (clientId: number, outcome: JourneyOutcome, notes?: string) => {
+    startTransition(() => {
+      updateClientOutcome(clientId, outcome, notes);
+    });
+  };
+
+  const getOutcomeBadge = (outcome: JourneyOutcome) => {
+    switch (outcome) {
+      case 'paid':
+        return { icon: DollarSign, label: 'Paid', className: 'bg-green-100 text-green-800' };
+      case 'responded':
+        return { icon: MessageCircle, label: 'Responded', className: 'bg-blue-100 text-blue-800' };
+      case 'ghosted':
+        return { icon: UserX, label: 'Ghosted', className: 'bg-red-100 text-red-800' };
+      default:
+        return { icon: Clock, label: 'Pending', className: 'bg-yellow-100 text-yellow-800' };
+    }
+  };
+
   const stats = {
     total: clients.length,
     activated: clients.filter((c) => c.status === "activated").length,
     pending: clients.filter((c) => c.status === "pending").length,
+    paid: clients.filter((c) => c.journey_outcome === "paid").length,
     conversionRate:
       clients.length > 0
         ? Math.round(
@@ -148,7 +183,7 @@ export default function ClientList({ initialClients }: ClientListProps) {
   return (
     <>
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
@@ -189,6 +224,17 @@ export default function ClientList({ initialClients }: ClientListProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.conversionRate}%</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Paid Clients</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.paid}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -360,6 +406,28 @@ export default function ClientList({ initialClients }: ClientListProps) {
                       ? "Mark Pending"
                       : "Mark Activated"}
                   </DropdownMenuItem>
+                  {/* Story 2.2: Quick Outcome Updates */}
+                  <DropdownMenuItem
+                    onClick={() => handleOutcomeUpdate(client.id, "paid", "Marked as paid via quick action")}
+                    disabled={isPending}
+                  >
+                    <DollarSign className="w-4 h-4 mr-2 text-green-600" />
+                    Mark Paid
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleOutcomeUpdate(client.id, "responded", "Client responded via quick action")}
+                    disabled={isPending}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2 text-blue-600" />
+                    Mark Responded
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleOutcomeUpdate(client.id, "ghosted", "Client did not respond via quick action")}
+                    disabled={isPending}
+                  >
+                    <UserX className="w-4 h-4 mr-2 text-red-600" />
+                    Mark Ghosted
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleDelete(client.id)}
                     disabled={isPending}
@@ -415,6 +483,40 @@ export default function ClientList({ initialClients }: ClientListProps) {
                     />
                   </div>
                 )}
+                {/* Story 2.2: Outcome Tracking Section */}
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium flex items-center">
+                      <Target className="w-4 h-4 mr-1 text-purple-600" />
+                      Journey Outcome
+                    </p>
+                    {(() => {
+                      const badge = getOutcomeBadge(client.journey_outcome);
+                      const Icon = badge.icon;
+                      return (
+                        <Badge className={badge.className}>
+                          <Icon className="w-3 h-3 mr-1" />
+                          {badge.label}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
+                  {client.outcome_notes && (
+                    <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+                      {client.outcome_notes}
+                    </p>
+                  )}
+                  {client.payment_received && client.payment_amount && (
+                    <p className="text-xs font-medium text-green-600">
+                      Payment: ${client.payment_amount.toFixed(2)} 
+                      {client.payment_timestamp && (
+                        <span className="text-muted-foreground ml-1">
+                          on {new Date(client.payment_timestamp).toLocaleDateString()}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
                 <div className="flex items-center justify-between pt-2">
                   <Badge
                     variant={
