@@ -351,6 +351,7 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log("Checkout session completed:", session.id);
 
+  // Story 3.1: Enhanced checkout session processing with content snapshot
   const clientToken = session.metadata?.client_token;
   const clientId = session.metadata?.client_id;
 
@@ -461,11 +462,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       console.log(`Checkout completion correlation created: ${correlationResult.correlationId}`);
     }
 
-    // Update client with checkout completion (existing functionality enhanced)
+    // Story 3.1: Update client with enhanced checkout completion tracking
     const updates: any = {
       journey_outcome: session.payment_status === "paid" ? "paid" : "pending",
       outcome_notes: `Checkout completed via Stripe. Session ID: ${session.id}. Status: ${session.payment_status}. ${correlationResult.success ? `Correlation ID: ${correlationResult.correlationId}` : 'Correlation creation failed.'}`,
       outcome_timestamp: new Date().toISOString(),
+      payment_session_id: session.id,
+      payment_status: session.payment_status,
     };
 
     if (session.payment_status === "paid" && session.amount_total) {

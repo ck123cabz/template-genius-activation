@@ -53,8 +53,13 @@ import {
 import { getClientJourneyProgress } from "@/app/actions/journey-actions";
 import { useFormState } from "react-dom";
 import { JourneyProgressCompact, JourneyStatusBadge } from "./JourneyProgress";
+import { PaymentStatus } from "@/components/ui/PaymentButton";
+import { PaymentStatusColumn, PaymentProgressIndicator } from "@/components/ui/PaymentStatusColumn";
+import { retryFailedPayment } from "@/app/actions/payment-actions";
 
 import { OutcomeModal } from "./OutcomeModal";
+import { ClientDetailModal } from "./ClientDetailModal";
+import { FailedPaymentsSummary } from "@/components/ui/PaymentAlert";
 
 interface ClientListProps {
   clients: Client[];
@@ -64,6 +69,7 @@ interface ClientListProps {
 export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "activated">("all");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "pending" | "failed">("all");
   const [isPending, startTransition] = useTransition();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -87,7 +93,15 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
     const matchesStatus =
       statusFilter === "all" || client.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesPayment = (() => {
+      if (paymentFilter === "all") return true;
+      if (paymentFilter === "paid") return client.payment_received;
+      if (paymentFilter === "pending") return client.payment_status === 'pending';
+      if (paymentFilter === "failed") return client.payment_status === 'failed';
+      return true;
+    })();
+
+    return matchesSearch && matchesStatus && matchesPayment;
   });
 
   const handleStatusUpdate = (clientId: number, newStatus: "pending" | "activated") => {
@@ -116,6 +130,24 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
     });
   };
 
+  // Story 3.2: Failed Payment Retry Handler
+  const handleRetryPayment = (clientId: number) => {
+    startTransition(async () => {
+      try {
+        const result = await retryFailedPayment(clientId.toString());
+        if (result.success && result.sessionUrl) {
+          // Open payment session in new tab
+          window.open(result.sessionUrl, '_blank');
+        } else if (result.error) {
+          console.error('Payment retry failed:', result.error.message);
+          // Could add toast notification here
+        }
+      } catch (error) {
+        console.error('Payment retry error:', error);
+      }
+    });
+  };
+
   const getOutcomeBadge = (outcome: JourneyOutcome) => {
     switch (outcome) {
       case 'paid':
@@ -134,10 +166,25 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
     activated: clients.filter((c) => c.status === "activated").length,
     pending: clients.filter((c) => c.status === "pending").length,
     paid: clients.filter((c) => c.journey_outcome === "paid").length,
+    // Story 3.2: Enhanced payment statistics
+    paymentReceived: clients.filter((c) => c.payment_received).length,
+    pendingPayments: clients.filter((c) => c.payment_status === 'pending').length,
+    failedPayments: clients.filter((c) => c.payment_status === 'failed').length,
+    totalRevenue: clients
+      .filter((c) => c.payment_received && c.payment_amount)
+      .reduce((sum, c) => sum + (c.payment_amount || 0), 0),
     conversionRate:
       clients.length > 0
         ? Math.round(
             (clients.filter((c) => c.status === "activated").length /
+              clients.length) *
+              100,
+          )
+        : 0,
+    paymentConversionRate:
+      clients.length > 0
+        ? Math.round(
+            (clients.filter((c) => c.payment_received).length /
               clients.length) *
               100,
           )
@@ -192,16 +239,28 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Paid Clients</CardTitle>
+            <CardTitle className="text-sm font-medium">Revenue Generated</CardTitle>
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {stats.paid}
+              ${stats.totalRevenue.toLocaleString()}
             </div>
+            <p className="text-xs text-muted-foreground">
+              {stats.paymentReceived} payments received ({stats.paymentConversionRate}%)
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Story 3.2: Failed Payments Alert System */}
+      <FailedPaymentsSummary
+        failedPayments={clients.filter((c) => c.payment_status === 'failed')}
+        onRetryPayment={handleRetryPayment}
+        onDismissAll={() => {
+          console.log('Dismissed all failed payment alerts');
+        }}
+      />
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -214,28 +273,67 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={statusFilter === "all" ? "default" : "outline"}
-            onClick={() => setStatusFilter("all")}
-            size="sm"
-          >
-            All
-          </Button>
-          <Button
-            variant={statusFilter === "pending" ? "default" : "outline"}
-            onClick={() => setStatusFilter("pending")}
-            size="sm"
-          >
-            Pending
-          </Button>
-          <Button
-            variant={statusFilter === "activated" ? "default" : "outline"}
-            onClick={() => setStatusFilter("activated")}
-            size="sm"
-          >
-            Activated
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Status Filters */}
+          <div className="flex gap-2">
+            <Button
+              variant={statusFilter === "all" ? "default" : "outline"}
+              onClick={() => setStatusFilter("all")}
+              size="sm"
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === "pending" ? "default" : "outline"}
+              onClick={() => setStatusFilter("pending")}
+              size="sm"
+            >
+              Pending
+            </Button>
+            <Button
+              variant={statusFilter === "activated" ? "default" : "outline"}
+              onClick={() => setStatusFilter("activated")}
+              size="sm"
+            >
+              Activated
+            </Button>
+          </div>
+
+          {/* Story 3.2: Payment Status Filters */}
+          <div className="flex gap-2 border-l pl-2">
+            <Button
+              variant={paymentFilter === "all" ? "default" : "outline"}
+              onClick={() => setPaymentFilter("all")}
+              size="sm"
+            >
+              All Payments
+            </Button>
+            <Button
+              variant={paymentFilter === "paid" ? "default" : "outline"}
+              onClick={() => setPaymentFilter("paid")}
+              size="sm"
+              className="text-green-700 hover:text-green-700"
+            >
+              Paid
+            </Button>
+            <Button
+              variant={paymentFilter === "pending" ? "default" : "outline"}
+              onClick={() => setPaymentFilter("pending")}
+              size="sm"
+              className="text-yellow-700 hover:text-yellow-700"
+            >
+              Pending
+            </Button>
+            <Button
+              id="payment-filter-failed"
+              variant={paymentFilter === "failed" ? "default" : "outline"}
+              onClick={() => setPaymentFilter("failed")}
+              size="sm"
+              className="text-red-700 hover:text-red-700"
+            >
+              Failed ({stats.failedPayments})
+            </Button>
+          </div>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -340,6 +438,18 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Link
                   </DropdownMenuItem>
+                  {/* Story 3.2: Client Detail Modal Integration */}
+                  <ClientDetailModal
+                    client={client}
+                    journeyProgress={journeyProgressMap.get(client.id)}
+                    onRetryPayment={handleRetryPayment}
+                    trigger={
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                    }
+                  />
                   <DropdownMenuItem
                     onClick={() =>
                       window.open(`/activate/${client.id}`, "_blank")
@@ -482,16 +592,23 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
                       {client.outcome_notes}
                     </p>
                   )}
-                  {client.payment_received && client.payment_amount && (
-                    <p className="text-xs font-medium text-green-600">
-                      Payment: ${client.payment_amount.toFixed(2)} 
-                      {client.payment_timestamp && (
-                        <span className="text-muted-foreground ml-1">
-                          on {new Date(client.payment_timestamp).toLocaleDateString()}
-                        </span>
-                      )}
-                    </p>
-                  )}
+                  {/* Story 3.2: Enhanced Payment Status Display */}
+                  <div data-testid="payment-status">
+                    <PaymentStatusColumn 
+                      client={client} 
+                      onRetryPayment={handleRetryPayment}
+                    />
+                    {/* Payment Progress in Journey Context */}
+                    {journeyProgressMap.has(client.id) && (
+                      <div className="mt-2">
+                        <PaymentProgressIndicator 
+                          journeyStep={journeyProgressMap.get(client.id)?.current_step || 1}
+                          paymentCompleted={client.payment_received || false}
+                          className="text-xs"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between pt-2">
                   <Badge

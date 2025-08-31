@@ -11,9 +11,12 @@ import {
   Star,
   Users,
   Zap,
-  Shield
+  Shield,
+  CreditCard,
+  DollarSign
 } from "lucide-react";
 import { Client, JourneyPage } from "@/lib/supabase";
+import { PaymentButton, PaymentStatus } from "@/components/ui/PaymentButton";
 
 interface ClientPageContentProps {
   client: Client;
@@ -191,6 +194,9 @@ function AgreementContent({ client, page }: { client: Client; page: JourneyPage 
           </div>
         </CardContent>
       </Card>
+
+      {/* Story 3.1: Payment Integration - Activation Fee Payment */}
+      <PaymentSection client={client} />
     </div>
   );
 }
@@ -319,4 +325,96 @@ function DefaultContent({ client, page }: { client: Client; page: JourneyPage })
 
 function formatPageType(type: string) {
   return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+// Payment Section Component for Agreement Page
+function PaymentSection({ client }: { client: Client }) {
+  // Check if client has already paid
+  const isPaid = client.payment_received || client.journey_outcome === 'paid';
+  const paymentStatus = client.payment_status || 'unpaid';
+
+  if (isPaid) {
+    return (
+      <Card className="bg-green-50 border-green-200">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+            <h3 className="text-lg font-semibold text-green-800">
+              Payment Confirmed
+            </h3>
+          </div>
+          <div className="space-y-2 text-sm text-green-700">
+            <p>Your $500 activation fee has been processed successfully.</p>
+            <div className="flex items-center gap-2 mt-3">
+              <PaymentStatus 
+                status="paid" 
+                amount={client.payment_amount || 500}
+                paidAt={client.payment_timestamp || undefined}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-blue-200 bg-blue-50" data-testid="payment-section">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <DollarSign className="h-6 w-6 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900">
+            Priority Access Activation
+          </h3>
+        </div>
+        
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Complete your activation with a one-time $500 priority access fee. 
+            This ensures exclusive focus on your {client.position} search and unlocks:
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <span>Dedicated specialist assignment</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <span>48-hour response guarantee</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <span>Priority candidate sourcing</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <span>Executive-level service standards</span>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-blue-200">
+            <PaymentButton
+              clientId={client.id}
+              clientToken={client.token || ''}
+              amount={500}
+              className="w-full md:w-auto"
+              onPaymentInitiated={(sessionId) => {
+                console.log('Payment initiated for client:', client.id, 'Session:', sessionId);
+              }}
+              onError={(error) => {
+                console.error('Payment error for client:', client.id, error);
+              }}
+            />
+          </div>
+
+          <div className="text-xs text-gray-500 space-y-1">
+            <p>💳 Secure payment processing powered by Stripe</p>
+            <p>🔒 Your payment information is encrypted and protected</p>
+            <p>📧 You'll receive email confirmation upon successful payment</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

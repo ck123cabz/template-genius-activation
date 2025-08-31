@@ -6,6 +6,7 @@ import {
 } from "@/lib/supabase-server";
 import { ClientList } from "./components/ClientList";
 import ContentEditor from "./components/ContentEditor";
+import { RevenueTracker } from "./components/RevenueTracker";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -19,12 +20,16 @@ async function DashboardData() {
 
   return (
     <Tabs defaultValue="clients" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="clients">Clients</TabsTrigger>
+        <TabsTrigger value="revenue">Revenue Analytics</TabsTrigger>
         <TabsTrigger value="content">Content</TabsTrigger>
       </TabsList>
       <TabsContent value="clients">
         <ClientList clients={clients} journeyProgressMap={new Map()} />
+      </TabsContent>
+      <TabsContent value="revenue">
+        <RevenueTracker clients={clients} />
       </TabsContent>
       <TabsContent value="content">
         <ContentEditor initialContent={content} />
