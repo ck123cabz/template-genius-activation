@@ -6,7 +6,7 @@
 'use server';
 
 import { revalidatePath } from "next/cache";
-import { supabaseServer } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { getStripe, PAYMENT_AMOUNTS, getPaymentUrls, PaymentResult } from "@/lib/stripe";
 import { PaymentMetadataValidator } from "@/lib/payment-metadata";
 import { EnhancedPaymentMetadata } from "./correlation-actions";
@@ -68,7 +68,7 @@ export async function createPaymentSession(
     }
 
     // Fetch client data from database
-    const supabase = supabaseServer();
+    const supabase = await createServiceClient();
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select(`
@@ -414,7 +414,7 @@ export async function cancelPaymentSession(clientId: string): Promise<{
   error?: string;
 }> {
   try {
-    const supabase = supabaseServer();
+    const supabase = await createServiceClient();
     
     // Update client status to cancelled
     const { error: updateError } = await supabase
@@ -492,7 +492,7 @@ export async function getClientPaymentStatus(clientId: string): Promise<{
   error?: string;
 }> {
   try {
-    const supabase = supabaseServer();
+    const supabase = await createServiceClient();
     
     const { data: client, error } = await supabase
       .from('clients')
@@ -545,7 +545,7 @@ export async function getPaymentAnalytics(timeframe: 'week' | 'month' | 'quarter
   error?: string;
 }> {
   try {
-    const supabase = supabaseServer();
+    const supabase = await createServiceClient();
     
     // Calculate date range based on timeframe
     const now = new Date();
@@ -676,7 +676,7 @@ export async function getFailedPayments(): Promise<{
   error?: string;
 }> {
   try {
-    const supabase = supabaseServer();
+    const supabase = await createServiceClient();
     
     const { data: clients, error } = await supabase
       .from('clients')
@@ -726,7 +726,7 @@ export async function bulkUpdatePaymentStatus(
   error?: string;
 }> {
   try {
-    const supabase = supabaseServer();
+    const supabase = await createServiceClient();
     
     const updates = {
       payment_status: status,

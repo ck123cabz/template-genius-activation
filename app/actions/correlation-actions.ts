@@ -1,6 +1,6 @@
 "use server";
 
-import { supabaseServer } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -74,8 +74,10 @@ export async function createPaymentCorrelation({
   conversionDuration?: number;
 }): Promise<{ success: boolean; correlationId?: string; error?: string }> {
   try {
+    const supabase = await createServiceClient();
+    
     // Check if correlation already exists to prevent duplicates
-    const { data: existingCorrelation } = await supabaseServer
+    const { data: existingCorrelation } = await supabase
       .from("payment_outcome_correlations")
       .select("id")
       .eq("stripe_payment_intent_id", stripePaymentIntentId)
@@ -92,7 +94,7 @@ export async function createPaymentCorrelation({
     const contentVersionId = paymentMetadata.content_version_id;
 
     // Create the correlation record
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabase
       .from("payment_outcome_correlations")
       .insert({
         stripe_payment_intent_id: stripePaymentIntentId,
@@ -117,7 +119,7 @@ export async function createPaymentCorrelation({
     const correlationId = data.id;
 
     // Update the client with correlation reference and increment counter
-    const { error: clientUpdateError } = await supabaseServer
+    const { error: clientUpdateError } = await supabase
       .from("clients")
       .update({
         last_correlation_id: correlationId,
@@ -148,7 +150,9 @@ export async function getClientCorrelationHistory(
   limit: number = 10
 ): Promise<{ success: boolean; correlations?: PaymentOutcomeCorrelation[]; error?: string }> {
   try {
-    const { data, error } = await supabaseServer
+    const supabase = await createServiceClient();
+    
+    const { data, error } = await supabase
       .from("payment_outcome_correlations")
       .select("*")
       .eq("client_id", clientId)
@@ -186,7 +190,9 @@ export async function calculateConversionMetrics(
   error?: string;
 }> {
   try {
-    let query = supabaseServer
+    const supabase = await createServiceClient();
+    
+    let query = supabase
       .from("payment_outcome_correlations")
       .select("*");
 
@@ -283,6 +289,8 @@ export async function overridePaymentCorrelation({
   newOutcomeType: 'paid' | 'failed' | 'pending' | 'cancelled';
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    const supabase = await createServiceClient();
+    
     const manualOverride = {
       admin_id: adminId,
       override_reason: overrideReason,
@@ -291,7 +299,7 @@ export async function overridePaymentCorrelation({
       notes: notes,
     };
 
-    const { error } = await supabaseServer
+    const { error } = await supabase
       .from("payment_outcome_correlations")
       .update({
         outcome_type: newOutcomeType,
@@ -330,7 +338,9 @@ export async function validateCorrelationAccuracy(
   error?: string;
 }> {
   try {
-    let query = supabaseServer
+    const supabase = await createServiceClient();
+    
+    let query = supabase
       .from("payment_outcome_correlations")
       .select(`
         *,
@@ -412,7 +422,9 @@ export async function validateCorrelationAccuracy(
  */
 async function getClientCorrelationCount(clientId: number): Promise<number> {
   try {
-    const { count, error } = await supabaseServer
+    const supabase = await createServiceClient();
+    
+    const { count, error } = await supabase
       .from("payment_outcome_correlations")
       .select("*", { count: "exact", head: true })
       .eq("client_id", clientId);
@@ -460,7 +472,8 @@ export async function bulkProcessCorrelations({
             break;
             
           case 'delete':
-            const { error } = await supabaseServer
+            const supabase = await createServiceClient();
+            const { error } = await supabase
               .from("payment_outcome_correlations")
               .delete()
               .eq("id", correlationId);
