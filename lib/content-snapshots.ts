@@ -3,7 +3,7 @@
  * Manages content freezing at payment time and comparison utilities for A/B analysis
  */
 
-'use server';
+// Content snapshot utilities
 
 import { supabaseServer } from "@/lib/supabase-server";
 import { createHash } from 'crypto';

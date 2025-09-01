@@ -3,7 +3,7 @@
  * Handles time-to-payment tracking and content performance scoring
  */
 
-'use server';
+// Payment timing utilities
 
 import { supabaseServer } from "@/lib/supabase-server";
 
