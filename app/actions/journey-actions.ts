@@ -218,31 +218,55 @@ export async function updateJourneyPageStatus(
  * Gets all journey pages for a client, ordered by page_order
  */
 export async function getClientJourneyPages(
-  clientId: number
+  clientId: string
 ): Promise<{ success: boolean; error?: string; pages?: JourneyPage[] }> {
   try {
     const { data, error } = await supabaseServer
       .from("journey_pages")
       .select("*")
       .eq("client_id", clientId)
-      .order("page_order", { ascending: true });
+      .order("page_type", { ascending: true }); // Use page_type instead of page_order
 
     if (error) {
       console.error("Error fetching journey pages:", error);
-      // Fallback to mock data when Supabase fails
-      const { mockJourneyPages } = await import("@/lib/supabase");
-      const mockPages = mockJourneyPages.filter(page => page.client_id === clientId);
-      return { success: true, pages: mockPages };
+      return { success: false, error: error.message };
     }
 
-    return { success: true, pages: data || [] };
+    // Transform the data to include derived properties for component compatibility
+    const transformedPages: JourneyPage[] = (data || []).map((page, index) => {
+      const pageOrder = getPageOrder(page.page_type);
+      const title = page.page_content?.title || formatPageType(page.page_type);
+      
+      return {
+        ...page,
+        page_order: pageOrder,
+        title: title,
+        status: 'pending' as JourneyPageStatus, // Default status
+        metadata: page.page_content || {}
+      };
+    });
+
+    return { success: true, pages: transformedPages };
   } catch (error) {
     console.error("Unexpected error fetching journey pages:", error);
-    // Fallback to mock data on unexpected error
-    const { mockJourneyPages } = await import("@/lib/supabase");
-    const mockPages = mockJourneyPages.filter(page => page.client_id === clientId);
-    return { success: true, pages: mockPages };
+    return { success: false, error: "Failed to fetch journey pages" };
   }
+}
+
+// Helper function to get consistent page ordering
+function getPageOrder(pageType: string): number {
+  const order = {
+    'activation': 1,
+    'agreement': 2,
+    'confirmation': 3,
+    'processing': 4
+  };
+  return order[pageType as keyof typeof order] || 99;
+}
+
+// Helper function to format page type
+function formatPageType(type: string): string {
+  return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
 /**
