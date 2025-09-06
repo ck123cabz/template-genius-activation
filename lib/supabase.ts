@@ -5,44 +5,51 @@ import { createClient } from "@supabase/supabase-js";
 export type JourneyOutcome = 'pending' | 'paid' | 'ghosted' | 'responded';
 
 export interface Client {
-  id: number;
+  id: string; // UUID
   company: string;
   contact: string;
   email: string;
   position: string;
-  salary: string;
+  salary: string | null;
   hypothesis: string;
   token: string;
-  status: "pending" | "activated";
+  status: string | null;
   created_at: string;
   activated_at: string | null;
   logo: string | null;
-  // Story 2.2: Journey Outcome Tracking
-  journey_outcome: JourneyOutcome;
-  outcome_notes: string | null;
-  outcome_timestamp: string | null;
-  payment_received: boolean;
-  payment_amount: number | null;
-  payment_timestamp: string | null;
+  payment_status: string | null;
+  payment_session_id: string | null;
+  content_snapshot_id: string | null;
+  updated_at: string;
+  // Legacy fields for backward compatibility
+  journey_outcome?: JourneyOutcome;
+  outcome_notes?: string | null;
+  outcome_timestamp?: string | null;
+  payment_received?: boolean;
+  payment_amount?: number | null;
+  payment_timestamp?: string | null;
 }
 
 // Journey page types and status enums
 export type JourneyPageType = 'activation' | 'agreement' | 'confirmation' | 'processing';
 export type JourneyPageStatus = 'pending' | 'active' | 'completed' | 'skipped';
 
-// Journey page interface
+// Journey page interface - matches actual database schema
 export interface JourneyPage {
-  id: number;
-  client_id: number;
+  id: string; // UUID
+  client_id: string | null; // UUID
   page_type: JourneyPageType;
-  page_order: number;
-  title: string;
-  content: string | null;
-  status: JourneyPageStatus;
-  metadata: Record<string, any>;
+  content_version: string | null;
+  hypothesis: string | null;
+  page_content: Record<string, any> | null; // JSON content
   created_at: string;
   updated_at: string;
-  completed_at: string | null;
+  // Derived properties for component compatibility
+  page_order?: number;
+  title?: string;
+  status?: JourneyPageStatus;
+  metadata?: Record<string, any>;
+  completed_at?: string | null;
 }
 
 // Extended client interface with journey pages

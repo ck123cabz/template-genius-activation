@@ -23,6 +23,13 @@
 
 ---
 
+## 🗺️ UX Documentation
+
+- Clickable Sitemap: `docs/UX-Sitemap.md`
+- Client Journey Wireframes (ASCII): `docs/Client-Journey-Wireframes.md`
+
+---
+
 ## 🎯 What This Platform Does
 
 ### Business Purpose - Revenue Intelligence Engine

@@ -51,7 +51,7 @@ import {
   bulkUpdateOutcomes,
 } from "@/app/actions/client-actions";
 import { getClientJourneyProgress } from "@/app/actions/journey-actions";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { JourneyProgressCompact, JourneyStatusBadge } from "./JourneyProgress";
 import { PaymentStatus } from "@/components/ui/PaymentButton";
 import { PaymentStatusColumn, PaymentProgressIndicator } from "@/components/ui/PaymentStatusColumn";
@@ -74,14 +74,15 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Server Actions
-  const createAction = async (formData: FormData) => {
+  const createAction = async (prevState: any, formData: FormData) => {
     const result = await createClient(formData);
     if (result.success) {
       setIsCreateDialogOpen(false);
     }
+    return result;
   };
 
-  const [createState, createFormAction] = useFormState(createAction, null);
+  const [createState, createFormAction] = useActionState(createAction, null);
 
   const filteredClients = clients.filter((client) => {
     const matchesSearch =

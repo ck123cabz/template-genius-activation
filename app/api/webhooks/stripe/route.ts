@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase/server";
 import Stripe from "stripe";
 
 // Ensure environment variables are available for Stripe integration
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.text();
-  const headersList = headers();
+  const headersList = await headers();
   const signature = headersList.get("stripe-signature");
 
   if (!signature) {
@@ -87,17 +87,19 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   }
 
   try {
+    const supabase = await createServiceClient();
+
     // Find the client by token or ID
     let client;
     if (clientId) {
-      const { data } = await supabaseServer
+      const { data } = await supabase
         .from("clients")
         .select("*")
         .eq("id", parseInt(clientId))
         .single();
       client = data;
     } else if (clientToken) {
-      const { data } = await supabaseServer
+      const { data } = await supabase
         .from("clients")
         .select("*")
         .eq("token", clientToken)
@@ -183,9 +185,12 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       payment_received: true,
       payment_amount: paymentIntent.amount / 100, // Convert from cents
       payment_timestamp: new Date().toISOString(),
+      // Update payment status for Story 2.3
+      payment_status: 'paid',
+      payment_session_id: paymentIntent.id,
     };
 
-    const { error } = await supabaseServer
+    const { error } = await supabase
       .from("clients")
       .update(updates)
       .eq("id", client.id);
@@ -197,9 +202,45 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
 
     console.log(`Client ${client.id} (${client.token}) marked as paid: $${(paymentIntent.amount / 100).toFixed(2)}`);
 
+    // Store payment event for detailed tracking
+    await supabase
+      .from("payment_events")
+      .insert({
+        client_id: client.id,
+        stripe_event_id: `pi_success_${paymentIntent.id}`,
+        event_type: "payment_intent.succeeded",
+        event_data: {
+          payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          payment_method: paymentIntent.payment_method_types?.[0],
+          status: paymentIntent.status,
+          metadata: paymentIntent.metadata,
+          correlation_id: correlationResult.correlationId,
+        },
+        processed_at: new Date().toISOString(),
+      });
+
+    // Update payment session if exists
+    if (client.payment_session_id) {
+      await supabase
+        .from("payment_sessions")
+        .update({
+          stripe_payment_intent_id: paymentIntent.id,
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          metadata: {
+            payment_success: true,
+            correlation_id: correlationResult.correlationId,
+            amount_paid: paymentIntent.amount / 100,
+          },
+        })
+        .eq("stripe_session_id", client.payment_session_id);
+    }
+
     // Optional: Update journey status if journey_id is provided (existing functionality)
     if (journeyId) {
-      await supabaseServer
+      await supabase
         .from("journey_pages")
         .update({
           status: "completed",
@@ -230,17 +271,19 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
   }
 
   try {
+    const supabase = await createServiceClient();
+
     // Find the client
     let client;
     if (clientId) {
-      const { data } = await supabaseServer
+      const { data } = await supabase
         .from("clients")
         .select("*")
         .eq("id", parseInt(clientId))
         .single();
       client = data;
     } else if (clientToken) {
-      const { data } = await supabaseServer
+      const { data } = await supabase
         .from("clients")
         .select("*")
         .eq("token", clientToken)
@@ -330,9 +373,10 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
       journey_outcome: "pending", // Keep as pending rather than failed to allow retry
       outcome_notes: `Payment failed via Stripe. Reason: ${paymentIntent.last_payment_error?.message || "Unknown error"}. Payment ID: ${paymentIntent.id}. ${correlationResult.success ? `Correlation ID: ${correlationResult.correlationId}` : 'Correlation creation failed.'}`,
       outcome_timestamp: new Date().toISOString(),
+      payment_status: 'failed',
     };
 
-    const { error } = await supabaseServer
+    const { error } = await supabase
       .from("clients")
       .update(updates)
       .eq("id", client.id);
@@ -341,6 +385,25 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
       console.error("Failed to update client after payment failure:", error);
       return;
     }
+
+    // Store payment failure event
+    await supabase
+      .from("payment_events")
+      .insert({
+        client_id: client.id,
+        stripe_event_id: `pi_failed_${paymentIntent.id}`,
+        event_type: "payment_intent.payment_failed",
+        event_data: {
+          payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          failure_reason: paymentIntent.last_payment_error?.message,
+          failure_code: paymentIntent.last_payment_error?.code,
+          metadata: paymentIntent.metadata,
+          correlation_id: correlationResult.correlationId,
+        },
+        processed_at: new Date().toISOString(),
+      });
 
     console.log(`Client ${client.id} (${client.token}) payment failed, notes updated with correlation tracking`);
   } catch (error) {
@@ -361,17 +424,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   try {
+    const supabase = await createServiceClient();
+
     // Find the client
     let client;
     if (clientId) {
-      const { data } = await supabaseServer
+      const { data } = await supabase
         .from("clients")
         .select("*")
         .eq("id", parseInt(clientId))
         .single();
       client = data;
     } else if (clientToken) {
-      const { data } = await supabaseServer
+      const { data } = await supabase
         .from("clients")
         .select("*")
         .eq("token", clientToken)
@@ -477,7 +542,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       updates.payment_timestamp = new Date().toISOString();
     }
 
-    const { error } = await supabaseServer
+    const { error } = await supabase
       .from("clients")
       .update(updates)
       .eq("id", client.id);
@@ -485,6 +550,52 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (error) {
       console.error("Failed to update client after checkout completion:", error);
       return;
+    }
+
+    // Store checkout completion event
+    await supabase
+      .from("payment_events")
+      .insert({
+        client_id: client.id,
+        stripe_event_id: `checkout_completed_${session.id}`,
+        event_type: "checkout.session.completed",
+        event_data: {
+          session_id: session.id,
+          payment_intent_id: session.payment_intent,
+          payment_status: session.payment_status,
+          amount_total: session.amount_total,
+          currency: session.currency,
+          metadata: session.metadata,
+          correlation_id: correlationResult.correlationId,
+        },
+        processed_at: new Date().toISOString(),
+      });
+
+    // Update or create payment session record
+    const sessionData = {
+      client_id: client.id,
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: session.payment_intent as string || null,
+      amount_cents: session.amount_total || 50000,
+      currency: session.currency || 'usd',
+      status: session.payment_status === 'paid' ? 'completed' : 'pending',
+      metadata: {
+        checkout_completion: true,
+        correlation_id: correlationResult.correlationId,
+        payment_method_types: session.payment_method_types,
+      },
+      completed_at: session.payment_status === 'paid' ? new Date().toISOString() : null,
+    };
+
+    // Update existing session or insert new one
+    const { error: sessionError } = await supabase
+      .from("payment_sessions")
+      .upsert(sessionData, {
+        onConflict: 'stripe_session_id',
+      });
+
+    if (sessionError) {
+      console.warn("Failed to update payment session:", sessionError);
     }
 
     console.log(`Client ${client.id} (${client.token}) checkout completed with status: ${session.payment_status} and correlation tracking`);
