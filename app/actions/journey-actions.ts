@@ -217,8 +217,10 @@ export async function updateJourneyPageStatus(
 /**
  * Gets all journey pages for a client, ordered by page_order
  */
+// Fetch all journey pages for a given client
+// Use numeric client IDs to match the database schema
 export async function getClientJourneyPages(
-  clientId: string
+  clientId: number
 ): Promise<{ success: boolean; error?: string; pages?: JourneyPage[] }> {
   try {
     const { data, error } = await supabaseServer
