@@ -221,6 +221,15 @@ export async function getClientJourneyPages(
   clientId: string
 ): Promise<{ success: boolean; error?: string; pages?: JourneyPage[] }> {
   try {
+    // If Supabase is not configured, use mock data
+    if (!supabaseServer) {
+      const { mockJourneyPages } = await import("@/lib/supabase");
+      const pages = mockJourneyPages.filter(
+        page => String(page.client_id) === String(clientId)
+      );
+      return { success: true, pages };
+    }
+
     const { data, error } = await supabaseServer
       .from("journey_pages")
       .select("*")
@@ -233,14 +242,14 @@ export async function getClientJourneyPages(
     }
 
     // Transform the data to include derived properties for component compatibility
-    const transformedPages: JourneyPage[] = (data || []).map((page, index) => {
+    const transformedPages: JourneyPage[] = (data || []).map((page) => {
       const pageOrder = getPageOrder(page.page_type);
       const title = page.page_content?.title || formatPageType(page.page_type);
-      
+
       return {
         ...page,
         page_order: pageOrder,
-        title: title,
+        title,
         status: 'pending' as JourneyPageStatus, // Default status
         metadata: page.page_content || {}
       };
