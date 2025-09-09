@@ -182,7 +182,7 @@ export const getPaymentUrls = (clientId: string, baseUrl?: string) => {
   
   return {
     success_url: `${base}/confirmation?client=${clientId}&payment=success`,
-    cancel_url: `${base}/activate/retry?client=${clientId}&payment=cancelled`,
+    cancel_url: `${base}/journey/retry?client=${clientId}&payment=cancelled`,
   };
 };
 

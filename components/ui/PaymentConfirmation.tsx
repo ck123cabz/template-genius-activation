@@ -155,7 +155,7 @@ export function PaymentConfirmation({
       actions: (
         <div className="flex flex-col sm:flex-row gap-3">
           <Button asChild className="bg-blue-600 hover:bg-blue-700">
-            <Link href={`/activate/retry?client=${clientId || paymentStatus.client_id}`}>
+            <Link href={`/journey/retry?client=${clientId || paymentStatus.client_id}`}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Payment Again
             </Link>

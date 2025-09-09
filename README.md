@@ -41,7 +41,7 @@
 
 ### Core Features - Connected Journey Intelligence
 1. **Revenue Intelligence Dashboard** (`/dashboard`) - Learning capture and pattern recognition
-2. **Connected Client Journey** (`/activate/[token]`) - 4-page experience with hypothesis tracking
+2. **Connected Client Journey** (`/journey/[token]`) - 4-page experience with hypothesis tracking
 3. **Learning Capture System** - Track why changes are made and what outcomes occur
 4. **Pattern Recognition** - Identify what converts vs what doesn't across clients
 5. **Payment Intelligence** - Link payments to specific content for correlation
@@ -50,7 +50,7 @@
 ### Key Pages
 - **Dashboard**: [http://localhost:3000/dashboard](http://localhost:3000/dashboard) - Main admin interface
 - **Preview**: [http://localhost:3000/activate/preview](http://localhost:3000/activate/preview) - Content preview
-- **Sample Activation**: [http://localhost:3000/activate/multi-position-sample](http://localhost:3000/activate/multi-position-sample)
+- **Sample Journey**: [http://localhost:3000/journey/multi-position-sample](http://localhost:3000/journey/multi-position-sample)
 
 ---
 

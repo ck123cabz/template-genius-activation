@@ -30,7 +30,7 @@ async function navigateToContentAnalytics(page: Page) {
 
 async function createMockPaymentSession(page: Page) {
   // Simulate payment session creation
-  await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+  await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
   await page.waitForLoadState('networkidle');
   
   // Click payment button to initiate payment session
@@ -49,7 +49,7 @@ async function createMockPaymentSession(page: Page) {
 test.describe('Content Snapshot System', () => {
   test('should create content snapshot at payment initiation', async ({ page }) => {
     await test.step('Navigate to client activation page', async () => {
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       await expect(page).toHaveTitle(/Template Genius/);
     });
 
@@ -98,7 +98,7 @@ test.describe('Content Snapshot System', () => {
         route.fulfill({ status: 500, body: 'Snapshot creation failed' });
       });
       
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       
       // Click payment button
       const paymentButton = page.locator('[data-testid="payment-button"]');
@@ -132,7 +132,7 @@ test.describe('Time-to-Payment Analytics', () => {
     const startTime = Date.now();
     
     await test.step('Record journey start time', async () => {
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       await page.waitForLoadState('networkidle');
       
       // Verify journey tracking is initialized
@@ -183,7 +183,7 @@ test.describe('Time-to-Payment Analytics', () => {
 
   test('should calculate conversion velocity scores accurately', async ({ page }) => {
     await test.step('Create fast conversion scenario', async () => {
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       
       // Quick decision simulation (under 30 seconds)
       await page.waitForTimeout(500);
@@ -264,7 +264,7 @@ test.describe('A/B Testing Content Management', () => {
 
     await test.step('Test client assignment through activation flow', async () => {
       // Visit activation page to trigger A/B test assignment
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       await page.waitForLoadState('networkidle');
       
       // Check if variation was assigned (either baseline or variation)
@@ -510,7 +510,7 @@ test.describe('End-to-End Content-Payment Correlation', () => {
     const testSessionId = 'e2e_test_' + Date.now();
     
     await test.step('Create client journey with content interaction', async () => {
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       
       // Simulate realistic user interaction
       await page.waitForTimeout(2000);
@@ -575,7 +575,7 @@ test.describe('End-to-End Content-Payment Correlation', () => {
     });
 
     await test.step('Verify payment flow continues despite correlation failure', async () => {
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       await page.click('[data-testid="payment-button"]');
       
       // Payment should still work even if correlation fails
@@ -606,7 +606,7 @@ test.describe('Performance Benchmarks', () => {
     await test.step('Content snapshot creation: < 500ms', async () => {
       const startTime = Date.now();
       
-      await page.goto(`${TEST_CONFIG.baseUrl}/activate/${TEST_CONFIG.clientToken}`);
+      await page.goto(`${TEST_CONFIG.baseUrl}/journey/${TEST_CONFIG.clientToken}`);
       await page.click('[data-testid="payment-button"]');
       
       // Wait for snapshot creation to complete

@@ -304,7 +304,7 @@ export async function createPaymentSession(
 
     // Revalidate relevant paths for fresh data
     revalidatePath(`/dashboard`);
-    revalidatePath(`/activate/${client.token}`);
+    revalidatePath(`/journey/${client.token}`);
 
     return {
       success: true,

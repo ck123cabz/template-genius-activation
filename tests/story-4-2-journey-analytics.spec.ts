@@ -11,7 +11,7 @@ import { test, expect, Page } from '@playwright/test';
 // Test configuration
 const BASE_URL = 'http://localhost:3000';
 const JOURNEY_DASHBOARD_URL = `${BASE_URL}/dashboard/journey-analytics`;
-const CLIENT_JOURNEY_URL = `${BASE_URL}/activate/preview`;
+const CLIENT_JOURNEY_URL = `${BASE_URL}/journey/preview`;
 const API_BASE = `${BASE_URL}/api`;
 
 // Test data helpers

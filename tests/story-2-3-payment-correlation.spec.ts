@@ -233,7 +233,7 @@ test.describe('Story 2.3: Payment-Outcome Correlation System', () => {
     
     test('should collect journey metadata during activation flow', async ({ page }) => {
       // Test the client journey with metadata collection
-      await page.goto(`${TEST_BASE_URL}/activate/${TEST_CLIENT_ID}`);
+      await page.goto(`${TEST_BASE_URL}/journey/${TEST_CLIENT_ID}`);
       await page.waitForLoadState('networkidle');
       
       // Check if metadata collection is working by inspecting window object
@@ -258,7 +258,7 @@ test.describe('Story 2.3: Payment-Outcome Correlation System', () => {
           
           // Check if we moved to a new page
           const currentUrl = page.url();
-          expect(currentUrl).toContain('/activate/');
+          expect(currentUrl).toContain('/journey/');
         }
       }
     });
@@ -342,7 +342,7 @@ test.describe('Story 2.3: Payment-Outcome Correlation System', () => {
       // Test that payment flow performance is not significantly impacted
       const startTime = Date.now();
       
-      await page.goto(`${TEST_BASE_URL}/activate/${TEST_CLIENT_ID}`);
+      await page.goto(`${TEST_BASE_URL}/journey/${TEST_CLIENT_ID}`);
       await page.waitForLoadState('networkidle');
       
       const loadTime = Date.now() - startTime;

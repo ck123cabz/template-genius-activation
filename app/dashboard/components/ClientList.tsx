@@ -119,8 +119,8 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
     }
   };
 
-  const copyActivationLink = (clientId: number) => {
-    const url = `${window.location.origin}/activate/${clientId}`;
+  const copyJourneyLink = (token: string) => {
+    const url = `${window.location.origin}/journey/${token}`;
     navigator.clipboard.writeText(url);
     // You could add a toast notification here
   };
@@ -434,10 +434,10 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onClick={() => copyActivationLink(client.id)}
+                    onClick={() => copyJourneyLink(client.token)}
                   >
                     <Copy className="w-4 h-4 mr-2" />
-                    Copy Link
+                    Copy Journey Link
                   </DropdownMenuItem>
                   {/* Story 3.2: Client Detail Modal Integration */}
                   <ClientDetailModal
@@ -453,7 +453,7 @@ export function ClientList({ clients, journeyProgressMap }: ClientListProps) {
                   />
                   <DropdownMenuItem
                     onClick={() =>
-                      window.open(`/activate/${client.id}`, "_blank")
+                      window.open(`/journey/${client.token}`, "_blank")
                     }
                   >
                     <Eye className="w-4 h-4 mr-2" />

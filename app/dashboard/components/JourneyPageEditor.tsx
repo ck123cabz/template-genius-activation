@@ -174,7 +174,7 @@ export function JourneyPageEditor({
   const getPagePreviewUrl = (pageType: string, token: string) => {
     switch (pageType) {
       case 'activation':
-        return `/activate/${token}`;
+        return `/journey/${token}`;
       case 'agreement':
         return `/agreement?token=${token}`;
       case 'confirmation':
@@ -182,7 +182,7 @@ export function JourneyPageEditor({
       case 'processing':
         return `/processing?token=${token}`;
       default:
-        return `/activate/${token}`;
+        return `/journey/${token}`;
     }
   };
 

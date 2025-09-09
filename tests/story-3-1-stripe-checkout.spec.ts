@@ -18,7 +18,7 @@ test.describe('Story 3.1: Stripe Checkout Integration', () => {
   
   test.beforeEach(async ({ page }) => {
     // Navigate to activation page with test client
-    await page.goto(`${TEST_BASE_URL}/activate/${TEST_CLIENT_TOKEN}`);
+    await page.goto(`${TEST_BASE_URL}/journey/${TEST_CLIENT_TOKEN}`);
     await page.waitForLoadEvent('networkidle');
   });
 

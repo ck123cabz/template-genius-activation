@@ -105,7 +105,7 @@ export async function updateClientContent(
   });
   
   revalidatePath('/dashboard');
-  revalidatePath(`/activate/[token]`, 'page'); // Invalidate client page cache
+  revalidatePath(`/journey/[token]`, 'page'); // Invalidate client page cache
   return result;
 }
 
@@ -169,7 +169,7 @@ export async function createPaymentSession(clientId: string): Promise<PaymentSes
     }],
     mode: 'payment',
     success_url: `${process.env.NEXT_PUBLIC_URL}/confirmation?client=${clientId}`,
-    cancel_url: `${process.env.NEXT_PUBLIC_URL}/activate/${client.activationToken}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_URL}/journey/${client.activationToken}`,
     metadata: {
       clientId: client.id,
       contentVersionId: activeVersion?.id || '' // CRITICAL: Link payment to exact content

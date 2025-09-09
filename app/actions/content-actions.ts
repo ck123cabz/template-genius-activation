@@ -57,7 +57,7 @@ export async function updateContent(contentData: {
     }
 
     revalidatePath("/dashboard");
-    revalidatePath("/activate/[token]", "page");
+    revalidatePath("/journey/[token]", "page");
     return { success: true, content: data };
   } catch (error) {
     console.error("Unexpected error:", error);

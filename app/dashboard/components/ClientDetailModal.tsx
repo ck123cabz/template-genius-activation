@@ -277,7 +277,7 @@ export function ClientDetailModal({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(`/activate/${client.id}`, '_blank')}
+                        onClick={() => window.open(`/journey/${client.token}`, '_blank')}
                       >
                         Preview Journey
                       </Button>

@@ -98,7 +98,7 @@ export default function ActivationPage() {
         setIsPageLoading(true);
         const [contentData, clientData] = await Promise.all([
           contentService.getCurrent(),
-          clientService.getById(params.token as string),
+          clientService.getByToken(params.token as string),
         ]);
 
         if (contentData) {
